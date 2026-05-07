@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Environment variables (NUNCA subir a GitHub)
+.env
+.env.local
+.env.*.local
+
+# Netlify build output
+.netlify/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.swp
