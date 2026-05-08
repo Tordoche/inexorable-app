@@ -1061,6 +1061,38 @@ select.fi{appearance:none}
 <button class="ai-fab" onclick="openAI()" title="Asistente IA">🤖 <span>Jarvis</span></button>
 
 <!-- AI ASSISTANT MODAL -->
+<!-- Modal editor de rutina -->
+<div class="ai-modal" id="routine-editor-modal" onclick="if(event.target===this)closeRoutineEditor()">
+  <div class="ai-sheet" style="max-height:85vh">
+    <div class="ai-header">
+      <div class="ai-handle"></div>
+      <div class="ai-title">
+        <span style="font-size:18px">✏️</span>
+        <span id="routine-editor-title">Editar rutina</span>
+      </div>
+      <button class="ai-close" onclick="closeRoutineEditor()">✕</button>
+    </div>
+    <input type="hidden" id="routine-editor-widx" value="0">
+    <div style="padding:0 16px 12px;overflow-y:auto;max-height:calc(85vh - 130px)">
+      <!-- Lista de ejercicios -->
+      <div id="routine-editor-list"></div>
+      <!-- Añadir ejercicio personalizado -->
+      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--bd)">
+        <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Añadir ejercicio</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <input id="new-ex-name" placeholder="Nombre del ejercicio" style="flex:1;min-width:140px;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 10px;font-size:12px;color:var(--tx);outline:none">
+          <select id="new-ex-tag" style="background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 10px;font-size:12px;color:var(--tx);outline:none">
+            <option value="bw">Peso libre</option>
+            <option value="mc">Máquina cable</option>
+            <option value="trx">TRX</option>
+          </select>
+          <button onclick="addCustomExercise()" style="background:var(--ac);color:#fff;border:none;border-radius:var(--rs);padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">+ Añadir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="ai-modal" id="ai-modal">
   <div class="ai-sheet">
     <div class="ai-header">
@@ -1340,7 +1372,8 @@ function buildAIContext(){
   const dow=new Date().getDay();
   const wIdx=WORKOUT_DAYS[dow];
   const wo=wIdx!==undefined?PROGRAM_WORKOUTS[wIdx]:null;
-  const exDone=wo?wo.exercises.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length:0;
+  const woAllEx=wo?[...wo.exercises,...((S.customExercises||{})[wIdx]||[])].filter(ex=>!((S.hiddenExercises||{})[wIdx]||[]).includes(ex.name)):[];
+  const exDone=woAllEx.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
   const urgentes=S.projects.filter(p=>!p.done&&p.priority==='urgent');
   const conDeadline=S.projects.filter(p=>!p.done&&p.deadline).sort((a,b)=>a.deadline.localeCompare(b.deadline)).slice(0,5);
 
@@ -1793,11 +1826,45 @@ const MEAL_COMBOS={
   dinner:['Tortilla francesa + ensalada','Pechuga plancha + verduras','Crema verduras + huevos','Tofu salteado (sin carne)','Ensalada completa + queso'],
 };
 const WORKOUT_DAYS={1:0,2:1,4:2,6:3};
+// Cada ejercicio: {name, tag:'mc'|'trx'|'bw', heavy:bool (compuesto=más descanso)}
 const PROGRAM_WORKOUTS=[
-  {name:'Empuje',sub:'Pecho · Hombro · Tríceps',minutes:55,exercises:['Press banca MC','Press inclinado MC','Press militar MC','Flexiones TRX','Elevaciones laterales','Extensión tríceps TRX','Plancha frontal']},
-  {name:'Tirón',sub:'Espalda · Bíceps · Remo',minutes:55,exercises:['Remo invertido TRX','Dominadas asistidas TRX','Curl bíceps MC','Remo 1 brazo MC','Face pull TRX','Curl martillo MC','Plancha lateral TRX']},
-  {name:'Pierna',sub:'Cuádriceps · Glúteo · Isquios',minutes:60,exercises:['Sentadilla goblet MC','Peso muerto rumano MC','Zancadas MC','Búlgara TRX','Hip thrust MC','Curl femoral TRX','Gemelos MC','Pike TRX']},
-  {name:'Full body',sub:'Fuerza + Metabólico',minutes:50,exercises:['Sentadilla goblet','Press banca MC','Remo TRX','Press militar MC','Mountain climbers TRX','Burpees MC','Plancha lateral TRX']},
+  {name:'Empuje',sub:'Pecho · Hombro · Tríceps',minutes:55,exercises:[
+    {name:'Press banca MC',tag:'mc',heavy:true},
+    {name:'Press inclinado MC',tag:'mc',heavy:true},
+    {name:'Press militar MC',tag:'mc',heavy:true},
+    {name:'Flexiones TRX',tag:'trx',heavy:false},
+    {name:'Elevaciones laterales',tag:'bw',heavy:false},
+    {name:'Extensión tríceps TRX',tag:'trx',heavy:false},
+    {name:'Plancha frontal',tag:'bw',heavy:false},
+  ]},
+  {name:'Tirón',sub:'Espalda · Bíceps · Remo',minutes:55,exercises:[
+    {name:'Remo invertido TRX',tag:'trx',heavy:true},
+    {name:'Dominadas asistidas TRX',tag:'trx',heavy:true},
+    {name:'Curl bíceps MC',tag:'mc',heavy:false},
+    {name:'Remo 1 brazo MC',tag:'mc',heavy:true},
+    {name:'Face pull TRX',tag:'trx',heavy:false},
+    {name:'Curl martillo MC',tag:'mc',heavy:false},
+    {name:'Plancha lateral TRX',tag:'trx',heavy:false},
+  ]},
+  {name:'Pierna',sub:'Cuádriceps · Glúteo · Isquios',minutes:60,exercises:[
+    {name:'Sentadilla goblet MC',tag:'mc',heavy:true},
+    {name:'Peso muerto rumano MC',tag:'mc',heavy:true},
+    {name:'Zancadas MC',tag:'mc',heavy:false},
+    {name:'Búlgara TRX',tag:'trx',heavy:false},
+    {name:'Hip thrust MC',tag:'mc',heavy:true},
+    {name:'Curl femoral TRX',tag:'trx',heavy:false},
+    {name:'Gemelos MC',tag:'mc',heavy:false},
+    {name:'Pike TRX',tag:'trx',heavy:false},
+  ]},
+  {name:'Full body',sub:'Fuerza + Metabólico',minutes:50,exercises:[
+    {name:'Sentadilla goblet',tag:'bw',heavy:true},
+    {name:'Press banca MC',tag:'mc',heavy:true},
+    {name:'Remo TRX',tag:'trx',heavy:true},
+    {name:'Press militar MC',tag:'mc',heavy:true},
+    {name:'Mountain climbers TRX',tag:'trx',heavy:false},
+    {name:'Burpees MC',tag:'mc',heavy:false},
+    {name:'Plancha lateral TRX',tag:'trx',heavy:false},
+  ]},
 ];
 
 // ─── STATE ────────────────────────────────────────────────
@@ -1971,7 +2038,8 @@ function renderDash(){
   document.getElementById('kpi-kcal').textContent=kcal||'—';
   const dow2=new Date().getDay();const wIdx2=WORKOUT_DAYS[dow2];
   const wo2=wIdx2!==undefined?PROGRAM_WORKOUTS[wIdx2]:null;
-  const exDone2=wo2?wo2.exercises.filter((_,i)=>S.today.exercises[wIdx2+'_'+i]).length:0;
+  const woAllEx2=wo2?[...wo2.exercises,...((S.customExercises||{})[wIdx2]||[])].filter(ex=>!((S.hiddenExercises||{})[wIdx2]||[]).includes(ex.name)):[];
+  const exDone2=woAllEx2.filter((_,i)=>S.today.exercises[wIdx2+'_'+i]).length;
   document.getElementById('kpi-entreno').textContent=wo2?exDone2+'/'+wo2.exercises.length:'—';
   document.getElementById('kpi-urgentes').textContent=urgentes;
 
@@ -2025,26 +2093,33 @@ function renderDash(){
   if(!S.exerciseLogs)S.exerciseLogs={};
   if(wIdx!==undefined){
     const w=PROGRAM_WORKOUTS[wIdx];
-    const exDone=w.exercises.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
-    const woPct=Math.round(exDone/w.exercises.length*100);
+    const dashHidden=(S.hiddenExercises||{})[wIdx]||[];
+    const dashCustom=(S.customExercises||{})[wIdx]||[];
+    const dashAllEx=[...w.exercises,...dashCustom].filter(ex=>!dashHidden.includes(ex.name));
+    const exDone=dashAllEx.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
+    const woPct=Math.round(exDone/dashAllEx.length*100);
     wo.innerHTML=`<div class="card" style="padding:10px 13px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div>
           <div style="font-size:13px;font-weight:800">${w.name} <span style="color:var(--tx2);font-weight:500">· ${w.sub}</span></div>
-          <div style="font-size:10px;color:var(--tx2)">~${w.minutes} min · ${exDone}/${w.exercises.length} ej.</div>
+          <div style="font-size:10px;color:var(--tx2)">~${w.minutes} min · ${exDone}/${dashAllEx.length} ej.</div>
         </div>
         <div style="font-size:13px;font-weight:900;color:${woPct===100?'var(--green)':'var(--ac)'}">${woPct===100?'✅':woPct+'%'}</div>
       </div>
       <div class="wo-prog" style="margin-bottom:8px"><div class="wo-prog-fill" style="width:${woPct}%"></div></div>
-      ${w.exercises.map((ex,i)=>{
+      ${dashAllEx.map((ex,i)=>{
         const done=!!S.today.exercises[wIdx+'_'+i];
         const logKey='exlog_'+todayKey()+'_'+wIdx+'_'+i;
-        const log=S.exerciseLogs[logKey]||{sets:'',reps:'',kg:''};
-        const exSafe=ex.replace(/'/g,'&#39;');
+        const log=(S.exerciseLogs||{})[logKey]||{sets:'',reps:'',kg:''};
+        const exSafe=ex.name.replace(/'/g,'&#39;');
+        const lastLog=getLastLog(ex.name,wIdx);
+        const pr=getExPR(ex.name);
+        const isPR=pr&&log.kg&&parseFloat(log.kg)>=pr.kg;
         return`<div style="display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd)">
           <div onclick="toggleExDash(${wIdx},${i})" style="width:20px;height:20px;border-radius:6px;border:2px solid ${done?'var(--green)':'var(--bd)'};background:${done?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:11px;color:#fff">${done?'✓':''}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:11px;font-weight:600;${done?'opacity:.45;text-decoration:line-through':''};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex}</div>
+            <div style="font-size:11px;font-weight:600;${done?'opacity:.45;text-decoration:line-through':''};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ex.name}${isPR?' 🏆':''}</div>
+            ${lastLog&&lastLog.kg?`<div style="font-size:9px;color:var(--tx3);margin-top:1px">Última: ${lastLog.sets?lastLog.sets+'×':''}${lastLog.reps?lastLog.reps+' · ':''}${lastLog.kg} kg</div>`:''}
             <div style="display:flex;gap:4px;margin-top:3px">
               <input class="ex-inp" placeholder="Series" value="${log.sets}" oninput="saveExLog('${logKey}','sets',this.value)" ${done?'disabled':''}>
               <input class="ex-inp" placeholder="Reps" value="${log.reps}" oninput="saveExLog('${logKey}','reps',this.value)" ${done?'disabled':''}>
@@ -2529,52 +2604,139 @@ function renderFit(){
   const dow=new Date().getDay(),wIdx=WORKOUT_DAYS[dow];
   const c=document.getElementById('fit-content');
   if(wIdx===undefined){
-    c.innerHTML=`<div class="card" style="text-align:center;padding:24px"><div style="font-size:36px;margin-bottom:8px">🧘</div><div style="font-size:15px;font-weight:800;margin-bottom:5px">Día de descanso</div><div style="font-size:12px;color:var(--tx2)">Cardio LISS opcional · 30-45 min suave<br>Caminar, bicicleta, nadar</div></div>`;
+    // Día de descanso — muestra próximos entrenos
+    const dias=['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+    const nextWoList=[];
+    for(let off=1;off<=7;off++){const d=(dow+off)%7;if(WORKOUT_DAYS[d]!==undefined){nextWoList.push({d,w:PROGRAM_WORKOUTS[WORKOUT_DAYS[d]]});if(nextWoList.length>=3)break;}}
+    c.innerHTML=`<div class="card" style="text-align:center;padding:24px 16px">
+      <div style="font-size:36px;margin-bottom:8px">🧘</div>
+      <div style="font-size:15px;font-weight:800;margin-bottom:5px">Día de descanso</div>
+      <div style="font-size:12px;color:var(--tx2);margin-bottom:16px">Cardio LISS opcional · 30-45 min suave<br>Caminar, bicicleta, nadar</div>
+      <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Próximos entrenos</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        ${nextWoList.map(({d,w})=>`<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 12px;text-align:left;min-width:90px">
+          <div style="font-weight:800;color:var(--ac);font-size:11px;margin-bottom:2px">${dias[d]}</div>
+          <div style="font-weight:700;font-size:12px">${w.name}</div>
+          <div style="color:var(--tx2);font-size:10px">${w.sub}</div>
+        </div>`).join('')}
+      </div>
+    </div>
+    ${renderExHistory(WORKOUT_DAYS[(dow+1)%7]??0)}`;
     return;
   }
   const w=PROGRAM_WORKOUTS[wIdx];
   const phase=getCurrentPhase();
   const phaseLabel=phase==='deload'?'Descarga':phase===1?'Adaptación':phase===2?'Intensificación':'Definición pico';
-  const exDone=w.exercises.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
-  c.innerHTML=`<div class="wo-snap" style="margin-bottom:10px">
-    <div class="wo-name">${w.name} · ${w.sub}</div>
-    <div class="wo-sub">~${w.minutes} min · Fase ${typeof phase==='number'?phase:'—'}: ${phaseLabel}</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+  // Combinar ejercicios del plan + personalizados, filtrar ocultos
+  const hidden=(S.hiddenExercises||{})[wIdx]||[];
+  const customEx=(S.customExercises||{})[wIdx]||[];
+  const allExercises=[...w.exercises,...customEx].filter(ex=>!hidden.includes(ex.name));
+  const exDone=allExercises.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
+  const allDone=exDone===allExercises.length;
+
+  c.innerHTML=`
+  <!-- Cabecera sesión -->
+  <div class="wo-snap" style="margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div class="wo-name">${w.name} <span style="color:var(--tx2);font-weight:500;font-size:13px">· ${w.sub}</span></div>
+        <div class="wo-sub">~${w.minutes} min · Fase ${typeof phase==='number'?phase:'—'}: ${phaseLabel}</div>
+      </div>
+      <button onclick="openRoutineEditor(${wIdx})" style="background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:4px 10px;font-size:10px;font-weight:700;color:var(--tx2);cursor:pointer;white-space:nowrap">✏ Editar</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
       <div class="wo-prog" style="flex:1"><div class="wo-prog-fill" style="width:${Math.round(exDone/w.exercises.length*100)}%"></div></div>
-      <span style="font-size:10px;color:var(--tx2)">${exDone}/${w.exercises.length}</span>
-      ${exDone===w.exercises.length?'<span style="font-size:10px;color:var(--green);font-weight:700">✅</span>':''}
+      <span style="font-size:11px;font-weight:700;color:${allDone?'var(--green)':'var(--tx2)'}">${allDone?'✅ Completado':exDone+'/'+w.exercises.length}</span>
     </div>
   </div>
-  ${w.exercises.map((ex,i)=>{
+
+  <!-- Lista de ejercicios -->
+  ${allExercises.map((ex,i)=>{
     const done=!!S.today.exercises[wIdx+'_'+i];
-    const tag=ex.includes('TRX')?'trx':ex.includes('MC')?'mc':'bw';
-    const reps=phase===1?'4×10 · RIR 2':phase===2?'4×8 · RIR 1':'5×6 · RIR 0';
     const logKey='exlog_'+todayKey()+'_'+wIdx+'_'+i;
     const log=(S.exerciseLogs||{})[logKey]||{sets:'',reps:'',kg:''};
-    const exSafe=ex.replace(/'/g,'&#39;');
-    return`<div class="ex-card${done?' ex-done':''}">
+    const exSafe=ex.name.replace(/'/g,'&#39;');
+    const lastLog=getLastLog(ex.name,wIdx);
+    const pr=getExPR(ex.name);
+    const isPR=pr&&log.kg&&parseFloat(log.kg)>=pr.kg;
+    const target=getExTarget(ex,phase);
+    const restSec=ex.heavy?120:ex.tag==='mc'||ex.tag==='trx'?90:60;
+    // Sugerencia de peso: última sesión. Si completó todas las reps → +2.5kg
+    let suggestedKg='';
+    if(lastLog&&lastLog.kg){
+      const lastKg=parseFloat(lastLog.kg);
+      const lastReps=parseInt(lastLog.reps)||0;
+      const targetReps=parseInt(target.reps)||0;
+      suggestedKg=lastReps>=targetReps&&targetReps>0?lastKg+2.5:lastKg;
+    }
+    return`<div class="ex-card${done?' ex-done':''}" id="ex-card-${wIdx}-${i}">
       <div class="ex-row">
         <div class="ex-num">${i+1}</div>
         <div style="flex:1;min-width:0">
-          <div class="ex-name">${ex}<span class="ex-tag tag-${tag}">${tag.toUpperCase()}</span></div>
-          <div style="font-size:9px;color:var(--tx2);margin-top:2px">${reps}</div>
-          <div style="display:flex;gap:5px;margin-top:6px;align-items:center;flex-wrap:wrap">
-            <input class="ex-inp" type="number" inputmode="numeric" placeholder="Series" value="${log.sets}" oninput="saveExLog('${logKey}','sets',this.value)" ${done?'disabled':''} style="width:58px">
-            <input class="ex-inp" type="number" inputmode="numeric" placeholder="Reps" value="${log.reps}" oninput="saveExLog('${logKey}','reps',this.value)" ${done?'disabled':''} style="width:58px">
-            <input class="ex-inp" type="number" inputmode="decimal" placeholder="Kg" value="${log.kg}" oninput="saveExLog('${logKey}','kg',this.value)" ${done?'disabled':''} style="width:58px">
-            <button onclick="askAISubstitute('${exSafe}');event.stopPropagation()" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.22);color:var(--ac);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap">🤖 Alt.</button>
+
+          <!-- Nombre + tag + PR -->
+          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+            <span class="ex-name" style="margin:0">${ex.name}</span>
+            <span class="ex-tag tag-${ex.tag}">${ex.tag.toUpperCase()}</span>
+            ${isPR?'<span style="font-size:9px;background:linear-gradient(135deg,#F97316,#EA580C);color:#fff;padding:1px 6px;border-radius:99px;font-weight:800">🏆 PR</span>':''}
+            ${pr&&!isPR?`<span style="font-size:9px;color:var(--tx3)">PR: ${pr.kg} kg</span>`:''}
           </div>
-          <div style="display:flex;gap:5px;margin-top:6px">
-            <button onclick="openExercise('${exSafe}');event.stopPropagation()" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.18);color:var(--pu);border-radius:99px;padding:2px 9px;font-size:9px;font-weight:700;cursor:pointer">ℹ Técnica</button>
-            ${done?`<button onclick="startTimer(${ex.includes('TRX')||ex.includes('MC')?90:60},'Descanso · ${exSafe}');event.stopPropagation()" style="background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.2);color:var(--green);border-radius:99px;padding:2px 9px;font-size:9px;font-weight:700;cursor:pointer">⏱ ${ex.includes('TRX')||ex.includes('MC')?'90':'60'}s descanso</button>`:''}
+
+          <!-- Target de la fase -->
+          <div style="font-size:9px;color:var(--ac);font-weight:700;margin-top:3px">
+            Objetivo: ${target.sets}×${target.reps} · RIR ${target.rir}
+          </div>
+
+          <!-- Última sesión + sugerencia -->
+          ${lastLog&&lastLog.kg?`<div style="font-size:9px;color:var(--tx3);margin-top:1px">
+            Última vez: ${lastLog.sets?lastLog.sets+'×':''}${lastLog.reps?lastLog.reps+' reps · ':''}${lastLog.kg} kg
+            ${suggestedKg&&suggestedKg!==parseFloat(lastLog.kg)?` · <span style="color:var(--green);font-weight:700">↑ hoy: ${suggestedKg} kg</span>`:''}
+          </div>`:'<div style="font-size:9px;color:var(--tx3);margin-top:1px">Sin historial previo · ¡primera vez!</div>'}
+
+          <!-- Inputs de registro -->
+          <div style="display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+              <span style="font-size:8px;color:var(--tx3);text-transform:uppercase">Series</span>
+              <input class="ex-inp" type="number" inputmode="numeric" placeholder="${target.sets}" value="${log.sets}" oninput="saveExLog('${logKey}','sets',this.value)" ${done?'disabled':''} style="width:54px;text-align:center">
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+              <span style="font-size:8px;color:var(--tx3);text-transform:uppercase">Reps</span>
+              <input class="ex-inp" type="number" inputmode="numeric" placeholder="${target.reps}" value="${log.reps}" oninput="saveExLog('${logKey}','reps',this.value)" ${done?'disabled':''} style="width:54px;text-align:center">
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+              <span style="font-size:8px;color:var(--tx3);text-transform:uppercase">Kg</span>
+              <input class="ex-inp" type="number" inputmode="decimal" placeholder="${suggestedKg||'—'}" value="${log.kg}" oninput="saveExLog('${logKey}','kg',this.value)" ${done?'disabled':''} style="width:54px;text-align:center">
+            </div>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+              <span style="font-size:8px;color:var(--tx3);text-transform:uppercase">RIR real</span>
+              <select class="ex-inp" onchange="saveExLog('${logKey}','rir',this.value)" ${done?'disabled':''} style="width:54px;text-align:center;padding:5px 2px">
+                <option value="">—</option>
+                ${[0,1,2,3,4].map(r=>`<option value="${r}" ${log.rir==r?'selected':''}>${r}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+
+          <!-- Botones de acción -->
+          <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+            <button onclick="askAISubstitute('${exSafe}');event.stopPropagation()" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.22);color:var(--ac);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer">🤖 Alternativa</button>
+            <button onclick="openExercise('${exSafe}');event.stopPropagation()" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.18);color:var(--pu);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer">ℹ Técnica</button>
+            ${done?`<button onclick="startTimer(${restSec},'Descanso · ${exSafe}');event.stopPropagation()" style="background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.2);color:var(--green);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer">⏱ ${restSec}s descanso</button>`:''}
           </div>
         </div>
-        <div class="ex-chk${done?' chk':''}" onclick="toggleExercise(${wIdx},${i})">${done?'✓':''}</div>
+
+        <!-- Checkbox marcar hecho -->
+        <div class="ex-chk${done?' chk':''}" onclick="toggleExercise(${wIdx},${i})" style="flex-shrink:0">${done?'✓':''}</div>
       </div>
     </div>`;
   }).join('')}
-  <button onclick="openFeedback()" style="width:100%;margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:800;cursor:pointer">📊 Registrar sesión</button>
+
+  <!-- Botón registrar sesión -->
+  <button onclick="openFeedback()" style="width:100%;margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:800;cursor:pointer">📊 Registrar sesión completa</button>
+
+  <!-- Historial -->
   ${renderExHistory(wIdx)}
+
+  <!-- Configuración -->
   <div class="card" style="margin-top:10px">
     <div class="card-t">⚙ Configuración</div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">
@@ -2598,31 +2760,35 @@ function renderFit(){
   </div>`;
 }
 function renderExHistory(wIdx){
-  if(!S.exerciseLogs||!wIdx&&wIdx!==0)return'';
+  if(!S.exerciseLogs||wIdx===undefined||wIdx===null)return'';
   const w=PROGRAM_WORKOUTS[wIdx];if(!w)return'';
-  // Busca los últimos 3 días con logs para este workout
   const days=[];const today=new Date();
-  for(let d=1;d<=21;d++){
+  for(let d=1;d<=30;d++){
     const dt=new Date(today);dt.setDate(dt.getDate()-d);
     const k=dt.toISOString().split('T')[0];
     const hasLog=w.exercises.some((_,i)=>S.exerciseLogs['exlog_'+k+'_'+wIdx+'_'+i]?.kg||S.exerciseLogs['exlog_'+k+'_'+wIdx+'_'+i]?.sets);
     if(hasLog)days.push(k);
-    if(days.length>=3)break;
+    if(days.length>=4)break;
   }
   if(!days.length)return'';
   return`<div class="card" style="margin-top:10px">
-    <div class="card-t">📅 Historial reciente</div>
+    <div class="card-t" style="margin-bottom:10px">📅 Historial — últimas ${days.length} sesiones</div>
     ${days.map(dk=>{
       const dt=new Date(dk+'T12:00:00');
-      const label=dt.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
-      return`<div style="margin-bottom:10px">
-        <div style="font-size:10px;font-weight:700;color:var(--ac);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">${label}</div>
+      const label=dt.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'});
+      return`<div style="margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;color:var(--ac);margin-bottom:6px;text-transform:capitalize;letter-spacing:.3px">${label}</div>
         ${w.exercises.map((ex,i)=>{
-          const lg=S.exerciseLogs['exlog_'+dk+'_'+wIdx+'_'+i];
+          const lg=(S.exerciseLogs||{})['exlog_'+dk+'_'+wIdx+'_'+i];
           if(!lg||(!lg.sets&&!lg.reps&&!lg.kg))return'';
-          return`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd);font-size:11px">
-            <span style="color:var(--tx2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">${ex}</span>
-            <span style="font-weight:700;color:var(--tx);white-space:nowrap">${lg.sets?lg.sets+'×':''} ${lg.reps?lg.reps+' reps':''} ${lg.kg?'· '+lg.kg+' kg':''}</span>
+          const pr=getExPR(ex.name);
+          const isHistPR=pr&&lg.kg&&parseFloat(lg.kg)>=pr.kg&&pr.date===dk;
+          return`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);font-size:11px">
+            <span style="color:var(--tx2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">${ex.name}</span>
+            <span style="font-weight:700;color:var(--tx);white-space:nowrap">
+              ${lg.sets?lg.sets+'×':''}${lg.reps?lg.reps+' reps':''}${lg.kg?' · <strong>'+lg.kg+' kg</strong>':''}
+              ${isHistPR?' 🏆':''}
+            </span>
           </div>`;
         }).join('')}
       </div>`;
@@ -2631,17 +2797,14 @@ function renderExHistory(wIdx){
 }
 function toggleExercise(wIdx,exIdx){
   ensureToday();const key=wIdx+'_'+exIdx;
-  const wasUndone=!S.today.exercises[key];
   S.today.exercises[key]=!S.today.exercises[key];saveS();
   if(S.today.exercises[key]){
     gainXP(25,document.body);
     if(navigator.vibrate)navigator.vibrate(40);
-    // Auto-start rest timer
     const w=PROGRAM_WORKOUTS[wIdx];
-    const ex=w?w.exercises[exIdx]:'';
-    const restSec=ex&&(ex.includes('Sentadilla')||ex.includes('Peso muerto')||ex.includes('Press banca')||ex.includes('Press militar')||ex.includes('Hip thrust'))?120:
-                  ex&&(ex.includes('TRX')||ex.includes('MC'))?90:60;
-    setTimeout(()=>startTimer(restSec,'Descanso · '+(ex||'Ejercicio')),300);
+    const ex=w?w.exercises[exIdx]:null;
+    const restSec=ex?(ex.heavy?120:ex.tag==='mc'||ex.tag==='trx'?90:60):60;
+    setTimeout(()=>startTimer(restSec,'Descanso · '+(ex?ex.name:'Ejercicio')),300);
   }
   renderFit();
 }
@@ -3547,10 +3710,62 @@ function toggleExDash(wIdx,i){
   S.today.exercises[key]=!S.today.exercises[key];
   saveS();renderDash();
 }
+// ─── Helpers de ejercicio ──────────────────────────────────
+function getLastLog(exName,wIdx){
+  // Devuelve el log más reciente de un ejercicio concreto en un día con workout de ese wIdx
+  const w=PROGRAM_WORKOUTS[wIdx];if(!w)return null;
+  const exIdx=w.exercises.findIndex(e=>e.name===exName);
+  if(exIdx<0)return null;
+  const today=new Date();
+  for(let d=1;d<=60;d++){
+    const dt=new Date(today);dt.setDate(dt.getDate()-d);
+    const k=dt.toISOString().split('T')[0];
+    const lg=(S.exerciseLogs||{})['exlog_'+k+'_'+wIdx+'_'+exIdx];
+    if(lg&&(lg.kg||lg.sets))return{...lg,date:k};
+  }
+  return null;
+}
+function getExPR(exName){
+  return(S.exPRs||{})[exName]||null;
+}
+function getExTarget(ex,phase){
+  // Target personalizado del usuario tiene prioridad
+  const userT=(S.exTargets||{})[ex.name];
+  if(userT)return userT;
+  if(phase==='deload')return{sets:3,reps:'12',rir:3};
+  if(phase===1)return ex.heavy?{sets:4,reps:'10',rir:2}:{sets:3,reps:'12',rir:2};
+  if(phase===2)return ex.heavy?{sets:4,reps:'8',rir:1}:{sets:3,reps:'10',rir:1};
+  if(phase===3)return ex.heavy?{sets:5,reps:'6',rir:0}:{sets:4,reps:'8',rir:0};
+  return{sets:4,reps:'10',rir:2};
+}
+
 function saveExLog(logKey,field,val){
   if(!S.exerciseLogs)S.exerciseLogs={};
-  if(!S.exerciseLogs[logKey])S.exerciseLogs[logKey]={sets:'',reps:'',kg:''};
+  if(!S.exerciseLogs[logKey])S.exerciseLogs[logKey]={sets:'',reps:'',kg:'',rir:''};
   S.exerciseLogs[logKey][field]=val;
+  // PR tracking al registrar peso
+  if(field==='kg'&&val){
+    const withoutPrefix=logKey.replace('exlog_','');
+    const lastUs=withoutPrefix.lastIndexOf('_');
+    const exIdx=parseInt(withoutPrefix.slice(lastUs+1));
+    const rest=withoutPrefix.slice(0,lastUs);
+    const secLastUs=rest.lastIndexOf('_');
+    const wIdx=parseInt(rest.slice(secLastUs+1));
+    const w=PROGRAM_WORKOUTS[wIdx];
+    if(w&&w.exercises[exIdx]){
+      const exName=w.exercises[exIdx].name;
+      const kg=parseFloat(val);
+      if(!isNaN(kg)&&kg>0){
+        if(!S.exPRs)S.exPRs={};
+        const cur=S.exPRs[exName];
+        if(!cur||kg>cur.kg){
+          S.exPRs[exName]={kg,date:todayKey()};
+          clearTimeout(window._prTimer);
+          window._prTimer=setTimeout(()=>showToast('🏆 ¡Nuevo PR! '+exName+' · '+kg+' kg'),900);
+        }
+      }
+    }
+  }
   clearTimeout(window._exST);window._exST=setTimeout(()=>saveS(),600);
 }
 function askAISubstitute(exerciseName){
@@ -3559,6 +3774,69 @@ function askAISubstitute(exerciseName){
   const eq=`TRX: ${S.equipment?.trx?'Sí':'No'}, Máquina cable: ${S.equipment?.mc?'Sí':'No'}`;
   const prompt=`No puedo hacer "${exerciseName}" hoy. Equipamiento disponible: ${eq}. Entreno: ${wo?wo.name+' — '+wo.sub:'no definido'}. Dame 2-3 alternativas concretas que trabajen los mismos músculos, con series y repeticiones recomendadas.`;
   openAI();setTimeout(()=>{document.getElementById('ai-inp').value=prompt;sendAI();},400);
+}
+
+// ─── Editor de rutina ─────────────────────────────────────
+function openRoutineEditor(wIdx){
+  const w=PROGRAM_WORKOUTS[wIdx];
+  const modal=document.getElementById('routine-editor-modal');
+  document.getElementById('routine-editor-title').textContent=w.name+' — '+w.sub;
+  document.getElementById('routine-editor-widx').value=wIdx;
+  renderRoutineEditorList(wIdx);
+  modal.classList.add('open');
+}
+function closeRoutineEditor(){
+  document.getElementById('routine-editor-modal').classList.remove('open');
+}
+function renderRoutineEditorList(wIdx){
+  const w=PROGRAM_WORKOUTS[wIdx];
+  const list=document.getElementById('routine-editor-list');
+  const customExercises=(S.customExercises||{})[wIdx]||[];
+  const allEx=[...w.exercises,...customExercises];
+  const hidden=(S.hiddenExercises||{})[wIdx]||[];
+  list.innerHTML=allEx.map((ex,i)=>{
+    const isHidden=hidden.includes(ex.name);
+    const isCustom=i>=w.exercises.length;
+    return`<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)">
+      <span style="font-size:11px;color:var(--tx3);width:20px;text-align:center">${i+1}</span>
+      <div style="flex:1">
+        <span style="font-size:12px;font-weight:600;${isHidden?'opacity:.4;text-decoration:line-through':''}">${ex.name}</span>
+        <span class="ex-tag tag-${ex.tag}" style="margin-left:4px;font-size:8px">${ex.tag.toUpperCase()}</span>
+        ${isCustom?'<span style="font-size:8px;color:var(--ac);margin-left:4px">personalizado</span>':''}
+      </div>
+      <button onclick="toggleHideExercise(${wIdx},'${ex.name.replace(/'/g,"&#39;")}')" style="background:${isHidden?'rgba(5,150,105,.1)':'rgba(220,38,38,.08)'};border:1px solid ${isHidden?'rgba(5,150,105,.3)':'rgba(220,38,38,.2)'};color:${isHidden?'var(--green)':'var(--red)'};border-radius:99px;padding:2px 8px;font-size:9px;font-weight:700;cursor:pointer">${isHidden?'Mostrar':'Ocultar'}</button>
+      ${isCustom?`<button onclick="removeCustomExercise(${wIdx},${i-w.exercises.length})" style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);color:var(--red);border-radius:99px;padding:2px 8px;font-size:9px;font-weight:700;cursor:pointer">✕</button>`:''}
+    </div>`;
+  }).join('');
+}
+function toggleHideExercise(wIdx,exName){
+  if(!S.hiddenExercises)S.hiddenExercises={};
+  if(!S.hiddenExercises[wIdx])S.hiddenExercises[wIdx]=[];
+  const idx=S.hiddenExercises[wIdx].indexOf(exName);
+  if(idx>=0)S.hiddenExercises[wIdx].splice(idx,1);
+  else S.hiddenExercises[wIdx].push(exName);
+  saveS();
+  renderRoutineEditorList(parseInt(document.getElementById('routine-editor-widx').value));
+}
+function addCustomExercise(){
+  const nameEl=document.getElementById('new-ex-name');
+  const tagEl=document.getElementById('new-ex-tag');
+  const wIdx=parseInt(document.getElementById('routine-editor-widx').value);
+  const name=nameEl.value.trim();
+  if(!name){showToast('Escribe el nombre del ejercicio');return;}
+  if(!S.customExercises)S.customExercises={};
+  if(!S.customExercises[wIdx])S.customExercises[wIdx]=[];
+  S.customExercises[wIdx].push({name,tag:tagEl.value,heavy:false,custom:true});
+  nameEl.value='';
+  saveS();
+  renderRoutineEditorList(wIdx);
+  showToast('✅ Ejercicio añadido: '+name);
+}
+function removeCustomExercise(wIdx,customIdx){
+  if(!S.customExercises||!S.customExercises[wIdx])return;
+  S.customExercises[wIdx].splice(customIdx,1);
+  saveS();
+  renderRoutineEditorList(wIdx);
 }
 function generateAppIcon(){
   try{
