@@ -685,6 +685,7 @@ select.fi{appearance:none}
     </div>
     <div class="sec"><div class="sec-title">Comidas del día</div></div>
     <div id="meals-today"></div>
+    <div id="meals-extra" style="display:none;margin:0 0 8px"></div>
     <div class="sec"><div class="sec-title">Cambiar combinaciones</div></div>
     <div id="meals-library"></div>
   </div>
@@ -1335,6 +1336,7 @@ function buildAIContext(){
   const macros=getCurrentMacros();
   let kcal=0,prot=0;
   MEAL_SLOTS.forEach(s=>{const m=S.today.meals[s];if(m&&m.completed){kcal+=MEAL_KCAL[s];prot+=MEAL_PROT[s];}});
+  (S.today.extraFood||[]).forEach(e=>{kcal+=e.kcal||0;prot+=e.prot||0;});
   const dow=new Date().getDay();
   const wIdx=WORKOUT_DAYS[dow];
   const wo=wIdx!==undefined?PROGRAM_WORKOUTS[wIdx]:null;
@@ -1387,6 +1389,27 @@ CATÁLOGO DE COMIDAS DISPONIBLES:
 - Cena: ${(MEAL_COMBOS.dinner||[]).join(', ')}
 
 Fase entrenamiento: ${getCurrentPhase()} | Equipamiento: TRX=${S.equipment?.trx?'Sí':'No'}, MC=${S.equipment?.mc?'Sí':'No'}
+
+=== ACCIONES DISPONIBLES ===
+Cuando el usuario te pida hacer cambios en la app, incluye bloques [ACCIÓN:{...}] en tu respuesta (pueden ser varios). La app los ejecutará automáticamente y los eliminará del texto que ve el usuario. Usa SOLO los tipos exactos:
+
+• Marcar comida como comida/no comida:
+  [ACCIÓN:{"tipo":"marcar_comida","slot":"breakfast","hecho":true}]
+  slots válidos: breakfast, midmorning, lunch, preworkout, dinner
+
+• Cambiar el plato de una comida (usa nombre exacto del catálogo):
+  [ACCIÓN:{"tipo":"cambiar_comida","slot":"dinner","nombre":"Salmón al horno con verduras"}]
+
+• Registrar comida extra fuera del plan (cuando diga que comió algo adicional):
+  [ACCIÓN:{"tipo":"registrar_extra","desc":"Tostadas con pavo","kcal":280,"prot":18}]
+
+• Registrar peso corporal:
+  [ACCIÓN:{"tipo":"registrar_peso","kg":82.5}]
+
+• Marcar ejercicio del entreno de hoy como hecho/no hecho:
+  [ACCIÓN:{"tipo":"marcar_ejercicio","wIdx":${wIdx??0},"exIdx":0,"hecho":true}]
+
+IMPORTANTE: Si el usuario dice que comió algo fuera del plan (ej: "comí tostadas con pavo"), usa registrar_extra para añadir esas calorías al cómputo del día y luego recalcula y ajusta las comidas pendientes usando cambiar_comida. Siempre comenta brevemente qué cambios has aplicado.
 
 === FINANZAS ===
 ${(()=>{
@@ -1454,10 +1477,11 @@ async function sendAI(){
 
     const reply=data.content?.[0]?.text||'No pude generar una respuesta.';
     removeAITyping();
-    addAIMsg('ai',reply);
+    // Ejecutar acciones automáticas y obtener texto limpio para mostrar
+    const cleanReply=executeAIActions(reply);
+    addAIMsg('ai',cleanReply);
     aiHistory.push({role:'assistant',content:reply});
     try{sessionStorage.setItem('inexorable_ai_history',JSON.stringify(aiHistory.slice(-20)));}catch(e){}
-    detectAndOfferActions(reply);
 
   }catch(err){
     removeAITyping();
@@ -1541,6 +1565,99 @@ function aiApplyMeal(slot,idx){
   addAIMsg('ai','¡Hecho! He actualizado su '+MEAL_LABELS[slot].split(' ')[0]+' a "'+MEAL_COMBOS[slot][idx]+'". Los macros se actualizarán automáticamente.');
   if(document.getElementById('page-nutfit').classList.contains('active'))renderNutri();
   renderDash();
+}
+
+// ─── Sistema de acciones automáticas de Jarvis ──────────────────────────────
+// Jarvis puede incluir bloques [ACCIÓN:{...}] en sus respuestas para modificar
+// el estado de la app directamente sin que el usuario tenga que hacer nada.
+function executeAIActions(text){
+  const actionRegex=/\[ACCIÓN:(\{[^}]+\})\]/g;
+  const actions=[];
+  let match;
+  while((match=actionRegex.exec(text))!==null){
+    try{actions.push(JSON.parse(match[1]));}catch(e){console.warn('Acción inválida:',match[1]);}
+  }
+  // Eliminar los bloques de acción del texto visible
+  const cleanText=text.replace(/\[ACCIÓN:\{[^}]+\}\]/g,'').replace(/\n{3,}/g,'\n\n').trim();
+
+  if(actions.length===0) return cleanText;
+
+  let applied=0;
+  actions.forEach(action=>{
+    try{
+      switch(action.tipo){
+
+        case 'marcar_comida':
+          ensureToday();
+          if(!S.today.meals[action.slot]) S.today.meals[action.slot]={};
+          S.today.meals[action.slot].completed=!!action.hecho;
+          applied++;
+          break;
+
+        case 'cambiar_comida':
+          if(!S.mealCombos) S.mealCombos={};
+          // Buscar por nombre o usar índice directamente
+          if(typeof action.nombre==='string'){
+            const combos=MEAL_COMBOS[action.slot]||[];
+            const idx=combos.findIndex(c=>c.toLowerCase()===action.nombre.toLowerCase());
+            if(idx>=0) S.mealCombos[action.slot]=idx;
+          } else if(typeof action.idx==='number'){
+            S.mealCombos[action.slot]=action.idx;
+          }
+          applied++;
+          break;
+
+        case 'registrar_extra':
+          ensureToday();
+          if(!S.today.extraFood) S.today.extraFood=[];
+          S.today.extraFood.push({
+            desc: action.desc||'Extra',
+            kcal: Number(action.kcal)||0,
+            prot: Number(action.prot)||0,
+            ts: Date.now()
+          });
+          applied++;
+          break;
+
+        case 'marcar_ejercicio':
+          ensureToday();
+          const exKey=action.wIdx+'_'+action.exIdx;
+          S.today.exercises[exKey]=!!action.hecho;
+          applied++;
+          break;
+
+        case 'registrar_peso':
+          S.currentWeight=Number(action.kg);
+          const k=todayKey();
+          const wi=S.weightHistory.findIndex(w=>w.date===k);
+          if(wi>=0) S.weightHistory[wi]={date:k,weight:Number(action.kg)};
+          else S.weightHistory.push({date:k,weight:Number(action.kg)});
+          applied++;
+          break;
+
+        case 'completar_tarea':
+          const tToday=todayKey();
+          S.tasks.forEach(t=>{
+            if(!t.name) return;
+            if(t.name.toLowerCase().includes((action.nombre||'').toLowerCase())){
+              if(!S.taskDone) S.taskDone={};
+              S.taskDone[tToday+'_'+t.id]=!!action.hecho;
+            }
+          });
+          applied++;
+          break;
+      }
+    }catch(e){console.warn('Error ejecutando acción:',action,e);}
+  });
+
+  if(applied>0){
+    saveS();
+    renderDash();
+    const nutfitActive=document.getElementById('page-nutfit')?.classList.contains('active');
+    if(nutfitActive){renderNutri();renderFit();}
+    showToast('✅ Jarvis aplicó '+applied+' cambio'+(applied!==1?'s':'')+' automáticamente');
+  }
+  return cleanText;
 }
 
 // Triggered from meal card — opens AI pre-loaded with reconfig context
@@ -1848,6 +1965,7 @@ function renderDash(){
   const tasksDone=tasks.filter(t=>t.done).length,tasksTotal=tasks.length;
   let kcal=0,prot=0;
   MEAL_SLOTS.forEach(s=>{const m=S.today.meals[s];if(m&&m.completed){kcal+=MEAL_KCAL[s];prot+=MEAL_PROT[s];}});
+  (S.today.extraFood||[]).forEach(e=>{kcal+=e.kcal||0;prot+=e.prot||0;});
   const urgentes=S.projects.filter(p=>!p.done&&p.priority==='urgent').length;
   document.getElementById('kpi-rutina').textContent=`${tasksDone}/${tasksTotal}`;
   document.getElementById('kpi-kcal').textContent=kcal||'—';
@@ -2316,6 +2434,7 @@ function renderNutri(){
   const macros=getCurrentMacros();
   let kcal=0,prot=0;
   MEAL_SLOTS.forEach(s=>{const m=S.today.meals[s];if(m&&m.completed){kcal+=MEAL_KCAL[s];prot+=MEAL_PROT[s];}});
+  (S.today.extraFood||[]).forEach(e=>{kcal+=e.kcal||0;prot+=e.prot||0;});
   document.getElementById('kcal-cur').textContent=kcal;document.getElementById('kcal-tgt').textContent=macros.kcal;
   document.getElementById('prot-cur').textContent=prot;document.getElementById('prot-tgt').textContent=macros.protein;
   document.getElementById('kcal-bar').style.width=Math.min(100,(kcal/macros.kcal)*100)+'%';
@@ -2347,6 +2466,24 @@ function renderNutri(){
       </div>
     </div>`;
   }).join('');
+  // Extra foods (logged by Jarvis)
+  const extras=S.today.extraFood||[];
+  const extraEl=document.getElementById('meals-extra');
+  if(extraEl){
+    if(extras.length>0){
+      const totalExtraKcal=extras.reduce((s,e)=>s+(e.kcal||0),0);
+      const totalExtraProt=extras.reduce((s,e)=>s+(e.prot||0),0);
+      extraEl.style.display='';
+      extraEl.innerHTML=`<div class="card-t" style="margin-bottom:8px">⚡ Extras registrados por Jarvis · ${totalExtraKcal} kcal / ${totalExtraProt}g prot</div>`+
+        extras.map((e,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:5px">
+          <span style="font-size:12px;flex:1;color:var(--tx)">${e.desc}</span>
+          <span style="font-size:11px;color:var(--tx2);white-space:nowrap">${e.kcal} kcal · ${e.prot}g P</span>
+          <button onclick="removeExtraFood(${i})" style="background:rgba(220,38,38,.1);border:1px solid rgba(220,38,38,.2);color:var(--red);border-radius:6px;padding:2px 7px;font-size:10px;cursor:pointer">✕</button>
+        </div>`).join('');
+    } else {
+      extraEl.style.display='none';
+    }
+  }
   // Library
   document.getElementById('meals-library').innerHTML=MEAL_SLOTS.map(slot=>{
     const sel=S.mealCombos[slot]||0;const combos=MEAL_COMBOS[slot]||[];
@@ -2371,6 +2508,13 @@ function toggleMeal(slot){
   S.today.meals[slot].completed=!S.today.meals[slot].completed;
   saveS();renderNutri();
   if(S.today.meals[slot].completed)showToast('🍽 '+MEAL_LABELS[slot].split(' ')[0]+' registrada');
+}
+function removeExtraFood(idx){
+  ensureToday();
+  if(!S.today.extraFood) return;
+  S.today.extraFood.splice(idx,1);
+  saveS();renderNutri();renderDash();
+  showToast('Extra eliminado');
 }
 function cycleMealCombo(slot){
   const combos=MEAL_COMBOS[slot]||[];
