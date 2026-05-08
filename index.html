@@ -399,6 +399,20 @@ select.fi{appearance:none}
 .ai-action-title{font-size:11px;font-weight:800;color:var(--ac);margin-bottom:3px}
 .ai-action-body{font-size:10px;color:var(--tx3);line-height:1.45}
 
+/* QUICK ACTIONS ROW */
+.qa-row{display:flex;gap:7px;overflow-x:auto;padding:0 0 4px;scrollbar-width:none;margin-bottom:10px}
+.qa-row::-webkit-scrollbar{display:none}
+.qa-btn{display:flex;align-items:center;gap:5px;background:var(--sf);border:1.5px solid var(--bd);border-radius:99px;padding:8px 15px;font-size:11px;font-weight:700;color:var(--tx2);white-space:nowrap;cursor:pointer;flex-shrink:0;transition:all .18s;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.qa-btn:active{transform:scale(.96);opacity:.85}
+.qa-btn.qa-primary{background:linear-gradient(135deg,rgba(249,115,22,.12),rgba(249,115,22,.06));border-color:rgba(249,115,22,.35);color:var(--ac)}
+.qa-btn.qa-green{background:rgba(5,150,105,.07);border-color:rgba(5,150,105,.25);color:var(--green)}
+.qa-btn.qa-pu{background:rgba(124,58,237,.07);border-color:rgba(124,58,237,.22);color:var(--pu)}
+/* Next-activity card — subtle live pulse when there's an upcoming event */
+@keyframes livePulse{0%,100%{box-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 20px rgba(0,0,0,.08)}60%{box-shadow:0 1px 3px rgba(0,0,0,.06),0 4px 24px rgba(249,115,22,.14)}}
+.next-act-live{animation:livePulse 4s ease-in-out infinite}
+/* Section divider */
+.sec-div{height:1px;background:var(--bd);margin:16px 0 14px;border-radius:1px}
+
 /* RECIPE MODAL */
 .recipe-ov{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:205;display:none;align-items:flex-end;justify-content:center;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
 .recipe-ov.open{display:flex}
@@ -599,6 +613,9 @@ select.fi{appearance:none}
     </div>
   </div>
 
+  <!-- ACCIONES RÁPIDAS -->
+  <div id="dash-quick-actions"></div>
+
   <!-- PRÓXIMA ACTIVIDAD -->
   <div id="dash-next-activity" style="margin-bottom:10px"></div>
 
@@ -625,6 +642,7 @@ select.fi{appearance:none}
   <div style="margin-bottom:8px">
     <div class="macro-row"><div class="macro-lbl">Calorías</div><div class="macro-bar-w"><div class="macro-fill" id="dash-kcal-bar" style="width:0%;background:linear-gradient(90deg,var(--orange),var(--gold))"></div></div><div class="macro-val"><span id="dash-kcal-cur">0</span>/<span id="dash-kcal-tgt">2300</span></div></div>
     <div class="macro-row"><div class="macro-lbl">Proteína</div><div class="macro-bar-w"><div class="macro-fill" id="dash-prot-bar" style="width:0%;background:var(--ac)"></div></div><div class="macro-val"><span id="dash-prot-cur">0</span>/<span id="dash-prot-tgt">176</span>g</div></div>
+    <div class="macro-row"><div class="macro-lbl" style="color:#38BDF8">💧 Agua</div><div class="macro-bar-w"><div class="macro-fill" id="dash-water-bar" style="width:0%;background:#38BDF8"></div></div><div class="macro-val" id="dash-water-val" style="color:#38BDF8">0/8</div></div>
   </div>
   <div id="dash-meals"></div>
 
@@ -685,6 +703,14 @@ select.fi{appearance:none}
     <div style="margin-bottom:10px">
       <div class="macro-row"><div class="macro-lbl">Calorías</div><div class="macro-bar-w"><div class="macro-fill" id="kcal-bar" style="width:0%;background:linear-gradient(90deg,var(--orange),var(--gold))"></div></div><div class="macro-val"><span id="kcal-cur">0</span>/<span id="kcal-tgt">2300</span></div></div>
       <div class="macro-row"><div class="macro-lbl">Proteína</div><div class="macro-bar-w"><div class="macro-fill" id="prot-bar" style="width:0%;background:var(--ac)"></div></div><div class="macro-val"><span id="prot-cur">0</span>/<span id="prot-tgt">176</span>g</div></div>
+    </div>
+    <!-- Agua -->
+    <div class="card" style="padding:12px 14px;margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:12px;font-weight:700">💧 Agua</div>
+        <div id="water-label" style="font-size:12px;font-weight:800;color:#38BDF8">0 / 8 vasos</div>
+      </div>
+      <div class="water-grid" id="water-grid"></div>
     </div>
     <div class="sec"><div class="sec-title">Comidas del día</div></div>
     <div id="meals-today"></div>
@@ -2073,6 +2099,55 @@ function showMotiv(xp){
 }
 function closeMotivBtn(){document.getElementById('motiv-ov').classList.remove('show');motivLock=false;}
 
+// ─── QUICK ACTIONS ────────────────────────────────────────
+function renderQuickActions(){
+  const el=document.getElementById('dash-quick-actions');
+  if(!el)return;
+  ensureToday();
+  const btns=[];
+  // Next pending meal → primary CTA
+  let nextSlot=null;
+  for(const slot of MEAL_SLOTS){
+    if(!(S.today.meals[slot]&&S.today.meals[slot].completed)){nextSlot=slot;break;}
+  }
+  if(nextSlot){
+    const cIdx=S.mealCombos[nextSlot]||0;
+    const name=(MEAL_COMBOS[nextSlot]||[])[cIdx]||MEAL_LABELS[nextSlot].split(' ')[0];
+    const shortName=MEAL_LABELS[nextSlot].split(' ')[0];
+    btns.push(`<button class="qa-btn qa-primary" onclick="markNextMeal('${nextSlot}')">✓ ${shortName}</button>`);
+  } else {
+    btns.push(`<button class="qa-btn qa-green" style="pointer-events:none">🎉 Comidas OK</button>`);
+  }
+  // Entreno
+  const dow=new Date().getDay();
+  const wIdx=WORKOUT_DAYS[dow];
+  if(wIdx!==undefined){
+    const w=PROGRAM_WORKOUTS[wIdx];
+    btns.push(`<button class="qa-btn" onclick="showPage('nutfit');switchNFTab('fit')">💪 ${w.name}</button>`);
+  } else {
+    btns.push(`<button class="qa-btn" onclick="showPage('nutfit');switchNFTab('fit')">💪 Entreno</button>`);
+  }
+  // Water
+  const cups2=S.today.water||0;
+  const waterDone=cups2>=8;
+  btns.push(`<button class="qa-btn${waterDone?' qa-green':''}" onclick="showPage('nutfit');switchNFTab('nutri')">💧 ${cups2}/8 vasos</button>`);
+  // Weight log
+  btns.push(`<button class="qa-btn" onclick="logWeight()">⚖️ Peso</button>`);
+  // Jarvis
+  btns.push(`<button class="qa-btn qa-pu" onclick="openAI()">🤖 Jarvis</button>`);
+  // Add task
+  btns.push(`<button class="qa-btn" onclick="openAddTask(null)">+ Tarea</button>`);
+  el.innerHTML=`<div class="qa-row">${btns.join('')}</div>`;
+}
+function markNextMeal(slot){
+  if(!slot)return;
+  if(!(S.today.meals[slot]&&S.today.meals[slot].completed)){
+    toggleMeal(slot);
+    renderDash();
+    showToast('✓ '+MEAL_LABELS[slot].split(' ')[0]+' marcado','var(--green)');
+  }
+}
+
 // ─── DASHBOARD ────────────────────────────────────────────
 function renderNextActivity(){
   ensureToday();
@@ -2090,7 +2165,7 @@ function renderNextActivity(){
     if(!(S.today.meals[slot]&&S.today.meals[slot].completed)&&MEAL_TIMES[slot]>timeStr){
       const cIdx=S.mealCombos[slot]||0;
       const cName=(MEAL_COMBOS[slot]||[])[cIdx]||'';
-      cands.push({type:'meal',time:MEAL_TIMES[slot],label:MEAL_LABELS[slot].split(' ')[0],sub:cName,kcal:MEAL_KCAL[slot],slot});
+      cands.push({type:'meal',time:MEAL_TIMES[slot],label:MEAL_LABELS[slot].split(' ')[0],sub:cName,kcal:getSlotKcal(slot),slot});
       break;
     }
   }
@@ -2139,22 +2214,29 @@ function renderNextActivity(){
     return diff<60?diff+' min':Math.floor(diff/60)+'h '+(diff%60)+'min';
   })():'Ahora';
 
-  el.innerHTML=`<div class="card" style="padding:14px 16px;border-left:3px solid ${colors[next.type]}">
-    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${colors[next.type]};margin-bottom:6px">⏱ Próxima actividad · ${next.time} (en ${timeDiff})</div>
+  const actionBtn=next.type==='meal'
+    ?`<button onclick="markNextMeal('${next.slot}')" style="margin-top:8px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:none;border-radius:99px;padding:6px 15px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(249,115,22,.3)">✓ Marcar como hecho</button>`
+    :next.type==='workout'
+    ?`<button onclick="showPage('nutfit');switchNFTab('fit')" style="margin-top:8px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:none;border-radius:99px;padding:6px 15px;font-size:11px;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(249,115,22,.3)">💪 Ir al entreno →</button>`
+    :``;
+  el.innerHTML=`<div class="card next-act-live" style="padding:14px 16px;border-left:3px solid ${colors[next.type]}">
+    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:${colors[next.type]};margin-bottom:7px">⏱ Próxima actividad · ${next.time} · en ${timeDiff}</div>
     <div style="display:flex;align-items:center;gap:12px">
-      <div style="font-size:28px">${icons[next.type]}</div>
+      <div style="font-size:30px;line-height:1">${icons[next.type]}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:14px;font-weight:800">${next.label}</div>
-        <div style="font-size:11px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${next.sub||''}</div>
-        ${next.type==='meal'?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">${next.kcal} kcal · <button onclick="showPage('nutfit');switchNFTab('nutri')" style="background:none;border:none;color:var(--ac);font-size:10px;font-weight:700;cursor:pointer;padding:0">Ver comida →</button></div>`:''}
-        ${next.type==='workout'?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">${next.done}/${next.total} ejercicios · <button onclick="showPage('nutfit');switchNFTab('fit')" style="background:none;border:none;color:var(--ac);font-size:10px;font-weight:700;cursor:pointer;padding:0">Ir al entreno →</button></div>`:''}
+        <div style="font-size:15px;font-weight:900;letter-spacing:-.2px">${next.label}</div>
+        <div style="font-size:11px;color:var(--tx2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${next.sub||''}</div>
+        ${next.type==='meal'?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">${next.kcal} kcal · <button onclick="showPage('nutfit');switchNFTab('nutri')" style="background:none;border:none;color:var(--ac);font-size:10px;font-weight:700;cursor:pointer;padding:0">Ver →</button></div>`:''}
+        ${next.type==='workout'?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">${next.done}/${next.total} ejercicios completados</div>`:''}
       </div>
     </div>
+    ${actionBtn}
   </div>`;
 }
 
 function renderDash(){
   ensureToday();checkStreak();updateXPUI();
+  renderQuickActions();
   const h=new Date().getHours();
   const gr=h<12?'Buenos días ☀️':h<18?'Buenas tardes 🌤':'Buenas noches 🌙';
   const dias=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -2189,6 +2271,11 @@ function renderDash(){
   document.getElementById('dash-kcal-tgt').textContent=macros.kcal;
   document.getElementById('dash-prot-cur').textContent=prot;
   document.getElementById('dash-prot-tgt').textContent=macros.protein;
+  const cups=S.today.water||0;
+  const wBar=document.getElementById('dash-water-bar');
+  const wVal=document.getElementById('dash-water-val');
+  if(wBar)wBar.style.width=Math.min(100,(cups/8)*100)+'%';
+  if(wVal){wVal.textContent=cups+'/8';wVal.style.color=cups>=8?'var(--green)':'#38BDF8';}
 
   // Ring
   const circ=94.2,pct=tasksTotal?Math.round(tasksDone/tasksTotal*100):0;
@@ -2295,14 +2382,15 @@ function renderDash(){
     const name=(MEAL_COMBOS[slot]||[])[combo]||'Sin configurar';
     const timeNow=new Date().getHours()+':'+String(new Date().getMinutes()).padStart(2,'0');
     const isNext=!done&&MEAL_TIMES[slot]>timeNow;
-    return`<div class="meal-snap" onclick="toggleMealFromDash('${slot}',event)" style="${isNext?'border-color:rgba(245,200,66,.3)':''}${done?'opacity:.75':''}">
-      <div class="ms-dot" style="background:${done?'var(--green)':MEAL_COLOR[slot]};opacity:${done?.6:1}"></div>
+    const slotTime=MEAL_TIMES[slot];
+    return`<div class="meal-snap" onclick="toggleMealFromDash('${slot}',event)" style="${isNext?'border-color:rgba(249,115,22,.3);background:rgba(249,115,22,.03)':''}${done?'opacity:.6':''}">
+      <div class="ms-dot" style="background:${done?'var(--green)':MEAL_COLOR[slot]};opacity:${done?.5:1}"></div>
       <div class="ms-body">
-        <div class="ms-name">${MEAL_LABELS[slot].split(' ')[0]}${isNext?' ← siguiente':''}</div>
-        <div class="ms-sub">${name.length>32?name.slice(0,30)+'…':name}</div>
+        <div class="ms-name" style="${done?'text-decoration:line-through;color:var(--tx3)':''}">${MEAL_LABELS[slot].split(' ')[0]} <span style="font-weight:400;color:var(--tx3);font-size:9px">${slotTime}</span>${isNext?'<span style="font-size:8px;font-weight:700;background:rgba(249,115,22,.12);color:var(--ac);border-radius:4px;padding:1px 5px;margin-left:5px">SIGUIENTE</span>':''}</div>
+        <div class="ms-sub">${name.length>34?name.slice(0,32)+'…':name}</div>
       </div>
       <div class="ms-right">
-        <div class="ms-kcal">${MEAL_KCAL[slot]}</div>
+        <div class="ms-kcal">${getSlotKcal(slot)}</div>
         <div class="ms-status">${done?'✅':'○'}</div>
       </div>
     </div>`;
@@ -2670,7 +2758,7 @@ function renderNutri(){
         <div><div class="meal-tl" style="color:${MEAL_COLOR[slot]}">${MEAL_LABELS[slot]} ${done?'✅':''}</div>
           <div class="meal-nl"><span class="combo-chip sel">${String.fromCharCode(65+cIdx)}</span>${cName}</div>
         </div>
-        <div class="meal-kl">${MEAL_KCAL[slot]}</div>
+        <div style="text-align:right;flex-shrink:0"><div class="meal-kl">${getSlotKcal(slot)}</div><div style="font-size:9px;color:var(--tx3);margin-top:1px">${getSlotProt(slot)}g P</div></div>
       </div>
       <div class="meal-act-panel" id="meal-act-${slot}">
         <button class="btn-mini${done?' done-btn':' primary'}" onclick="toggleMeal('${slot}')">${done?'✅ Hecho':'Marcar hecha'}</button>
@@ -2680,6 +2768,12 @@ function renderNutri(){
       </div>
     </div>`;
   }).join('');
+  // Water tracker
+  const wg=document.getElementById('water-grid');
+  const wl=document.getElementById('water-label');
+  const cups=S.today.water||0;
+  if(wg){wg.innerHTML=Array.from({length:8},(_,i)=>`<div class="water-cup${i<cups?' filled':''}" onclick="logWater(${i+1})" title="${(i+1)*250}ml">${i<cups?'💧':'○'}</div>`).join('');}
+  if(wl){wl.textContent=cups+' / 8 vasos · '+(cups*250)+'ml';wl.style.color=cups>=8?'var(--green)':'#38BDF8';}
   // Extra foods (logged by Jarvis)
   const extras=S.today.extraFood||[];
   const extraEl=document.getElementById('meals-extra');
@@ -2702,15 +2796,30 @@ function renderNutri(){
   document.getElementById('meals-library').innerHTML=MEAL_SLOTS.map(slot=>{
     const sel=S.mealCombos[slot]||0;const combos=MEAL_COMBOS[slot]||[];
     return`<div style="margin-bottom:12px"><div class="card-t" style="color:${MEAL_COLOR[slot]};margin-bottom:6px">${MEAL_LABELS[slot]}</div>
-      ${combos.map((name,i)=>`<div onclick="selectCombo('${slot}',${i})"
-        style="display:flex;align-items:center;gap:7px;padding:7px 9px;background:${i===sel?'rgba(0,229,255,.07)':'var(--sf2)'};
-        border:1px solid ${i===sel?'rgba(0,229,255,.28)':'var(--bd)'};border-radius:var(--rs);margin-bottom:4px;cursor:pointer">
-        <span class="combo-chip${i===sel?' sel':''}">${String.fromCharCode(65+i)}</span>
-        <span style="font-size:11px;flex:1;color:${i===sel?'var(--ac)':'var(--tx)'}">${name}</span>
-        <button onclick="event.stopPropagation();openRecipe('${slot}',${i})" style="background:none;border:none;color:var(--pu);font-size:11px;cursor:pointer;padding:2px 5px;flex-shrink:0" title="Ver receta">📖</button>
-        ${i===sel?'<span style="font-size:9px;color:var(--ac);font-weight:700">✓</span>':''}
-      </div>`).join('')}</div>`;
+      ${combos.map((name,i)=>{
+        const cKcal=(COMBO_KCAL[slot]||[])[i]||(MEAL_KCAL[slot]||0);
+        const cProt=(COMBO_PROT[slot]||[])[i]||(MEAL_PROT[slot]||0);
+        return`<div onclick="selectCombo('${slot}',${i})"
+          style="display:flex;align-items:center;gap:7px;padding:8px 10px;background:${i===sel?'rgba(249,115,22,.07)':'var(--sf2)'};
+          border:1px solid ${i===sel?'rgba(249,115,22,.3)':'var(--bd)'};border-radius:var(--rs);margin-bottom:5px;cursor:pointer;transition:all .2s">
+          <span class="combo-chip${i===sel?' sel':''}">${String.fromCharCode(65+i)}</span>
+          <span style="font-size:11px;flex:1;color:${i===sel?'var(--ac)':'var(--tx)'}; font-weight:${i===sel?700:400}">${name}</span>
+          <div style="text-align:right;flex-shrink:0;margin-right:5px">
+            <div style="font-size:10px;font-weight:700;color:var(--gold)">${cKcal}</div>
+            <div style="font-size:8px;color:var(--tx3)">${cProt}g P</div>
+          </div>
+          <button onclick="event.stopPropagation();openRecipe('${slot}',${i})" style="background:none;border:none;color:var(--pu);font-size:13px;cursor:pointer;padding:2px 4px;flex-shrink:0" title="Ver receta">📖</button>
+          ${i===sel?'<span style="font-size:11px;color:var(--ac)">✓</span>':'<span style="font-size:11px;color:transparent">✓</span>'}
+        </div>`;
+      }).join('')}</div>`;
   }).join('');
+}
+function logWater(cups){
+  ensureToday();
+  // Toggle: clicking filled cup un-fills; clicking empty fills up to that cup
+  if(S.today.water===cups){S.today.water=cups-1;}else{S.today.water=cups;}
+  saveS();renderNutri();
+  if(S.today.water>=8)showToast('💧 ¡2 litros completados! Perfecto','#38BDF8');
 }
 function toggleMealAct(slot){
   const el=document.getElementById('meal-act-'+slot);
@@ -3262,9 +3371,11 @@ function dlMeta(dl){
   return{label:days+'d',cls:'future'};
 }
 function fmtDate(ds){return new Date(ds+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'2-digit'});}
-function showToast(m){
-  const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');
-  clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2700);
+function showToast(m,color){
+  const t=document.getElementById('toast');t.textContent=m;
+  t.style.background=color||'';t.style.color=color?'#fff':'';
+  t.classList.add('show');
+  clearTimeout(window._tt);window._tt=setTimeout(()=>{t.classList.remove('show');t.style.background='';t.style.color='';},2700);
 }
 function closeOv(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
