@@ -2405,22 +2405,85 @@ function renderFit(){
     const done=!!S.today.exercises[wIdx+'_'+i];
     const tag=ex.includes('TRX')?'trx':ex.includes('MC')?'mc':'bw';
     const reps=phase===1?'4×10 · RIR 2':phase===2?'4×8 · RIR 1':'5×6 · RIR 0';
+    const logKey='exlog_'+todayKey()+'_'+wIdx+'_'+i;
+    const log=(S.exerciseLogs||{})[logKey]||{sets:'',reps:'',kg:''};
+    const exSafe=ex.replace(/'/g,'&#39;');
     return`<div class="ex-card${done?' ex-done':''}">
       <div class="ex-row">
         <div class="ex-num">${i+1}</div>
-        <div style="flex:1">
+        <div style="flex:1;min-width:0">
           <div class="ex-name">${ex}<span class="ex-tag tag-${tag}">${tag.toUpperCase()}</span></div>
-          <div style="font-size:9px;color:var(--tx2);margin-top:1px">${reps}</div>
-          <div style="display:flex;gap:5px;margin-top:5px">
-            <button onclick="openExercise('${ex.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.22);color:var(--pu);border-radius:99px;padding:2px 9px;font-size:9px;font-weight:700;cursor:pointer">ℹ Técnica</button>
-            ${done?`<button onclick="startTimer(90,'Descanso - ${ex.replace(/'/g,"\\'")}');event.stopPropagation()" style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.22);color:var(--green);border-radius:99px;padding:2px 9px;font-size:9px;font-weight:700;cursor:pointer">⏱ ${ex.includes('TRX')||ex.includes('MC')?'90s':'60s'} descanso</button>`:''}
+          <div style="font-size:9px;color:var(--tx2);margin-top:2px">${reps}</div>
+          <div style="display:flex;gap:5px;margin-top:6px;align-items:center;flex-wrap:wrap">
+            <input class="ex-inp" type="number" inputmode="numeric" placeholder="Series" value="${log.sets}" oninput="saveExLog('${logKey}','sets',this.value)" ${done?'disabled':''} style="width:58px">
+            <input class="ex-inp" type="number" inputmode="numeric" placeholder="Reps" value="${log.reps}" oninput="saveExLog('${logKey}','reps',this.value)" ${done?'disabled':''} style="width:58px">
+            <input class="ex-inp" type="number" inputmode="decimal" placeholder="Kg" value="${log.kg}" oninput="saveExLog('${logKey}','kg',this.value)" ${done?'disabled':''} style="width:58px">
+            <button onclick="askAISubstitute('${exSafe}');event.stopPropagation()" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.22);color:var(--ac);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer;white-space:nowrap">🤖 Alt.</button>
+          </div>
+          <div style="display:flex;gap:5px;margin-top:6px">
+            <button onclick="openExercise('${exSafe}');event.stopPropagation()" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.18);color:var(--pu);border-radius:99px;padding:2px 9px;font-size:9px;font-weight:700;cursor:pointer">ℹ Técnica</button>
+            ${done?`<button onclick="startTimer(${ex.includes('TRX')||ex.includes('MC')?90:60},'Descanso · ${exSafe}');event.stopPropagation()" style="background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.2);color:var(--green);border-radius:99px;padding:2px 9px;font-size:9px;font-weight:700;cursor:pointer">⏱ ${ex.includes('TRX')||ex.includes('MC')?'90':'60'}s descanso</button>`:''}
           </div>
         </div>
         <div class="ex-chk${done?' chk':''}" onclick="toggleExercise(${wIdx},${i})">${done?'✓':''}</div>
       </div>
     </div>`;
   }).join('')}
-  <button onclick="openFeedback()" style="width:100%;margin-top:11px;padding:11px;background:linear-gradient(135deg,var(--pu),var(--ac));color:#000;border:none;border-radius:var(--r);font-size:12px;font-weight:800;cursor:pointer">📊 Registrar feedback</button>`;
+  <button onclick="openFeedback()" style="width:100%;margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:800;cursor:pointer">📊 Registrar sesión</button>
+  ${renderExHistory(wIdx)}
+  <div class="card" style="margin-top:10px">
+    <div class="card-t">⚙ Configuración</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">
+      <div><div style="font-size:13px;font-weight:600">TRX / Anillas</div><div style="font-size:10px;color:var(--tx3)">Adapta ejercicios a TRX</div></div>
+      <div id="sw-trx-fit" class="sw${S.equipment?.trx!==false?' on':''}" onclick="toggleEquip('trx');this.classList.toggle('on')"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">
+      <div><div style="font-size:13px;font-weight:600">Máquina cable</div><div style="font-size:10px;color:var(--tx3)">Adapta ejercicios a MC</div></div>
+      <div id="sw-mc-fit" class="sw${S.equipment?.mc!==false?' on':''}" onclick="toggleEquip('mc');this.classList.toggle('on')"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
+      <div><div style="font-size:13px;font-weight:600">Fase del plan</div><div style="font-size:10px;color:var(--tx3)">Fase ${typeof phase==='number'?phase:'Descarga'} activa</div></div>
+      <select onchange="updateForcedPhase(this.value)" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--tx);outline:none">
+        <option value="" ${!S.forcedPhase?'selected':''}>Auto</option>
+        <option value="deload" ${S.forcedPhase==='deload'?'selected':''}>Descarga</option>
+        <option value="1" ${S.forcedPhase==='1'?'selected':''}>F1 Adaptación</option>
+        <option value="2" ${S.forcedPhase==='2'?'selected':''}>F2 Intensificación</option>
+        <option value="3" ${S.forcedPhase==='3'?'selected':''}>F3 Definición</option>
+      </select>
+    </div>
+  </div>`;
+}
+function renderExHistory(wIdx){
+  if(!S.exerciseLogs||!wIdx&&wIdx!==0)return'';
+  const w=PROGRAM_WORKOUTS[wIdx];if(!w)return'';
+  // Busca los últimos 3 días con logs para este workout
+  const days=[];const today=new Date();
+  for(let d=1;d<=21;d++){
+    const dt=new Date(today);dt.setDate(dt.getDate()-d);
+    const k=dt.toISOString().split('T')[0];
+    const hasLog=w.exercises.some((_,i)=>S.exerciseLogs['exlog_'+k+'_'+wIdx+'_'+i]?.kg||S.exerciseLogs['exlog_'+k+'_'+wIdx+'_'+i]?.sets);
+    if(hasLog)days.push(k);
+    if(days.length>=3)break;
+  }
+  if(!days.length)return'';
+  return`<div class="card" style="margin-top:10px">
+    <div class="card-t">📅 Historial reciente</div>
+    ${days.map(dk=>{
+      const dt=new Date(dk+'T12:00:00');
+      const label=dt.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+      return`<div style="margin-bottom:10px">
+        <div style="font-size:10px;font-weight:700;color:var(--ac);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">${label}</div>
+        ${w.exercises.map((ex,i)=>{
+          const lg=S.exerciseLogs['exlog_'+dk+'_'+wIdx+'_'+i];
+          if(!lg||(!lg.sets&&!lg.reps&&!lg.kg))return'';
+          return`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--bd);font-size:11px">
+            <span style="color:var(--tx2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">${ex}</span>
+            <span style="font-weight:700;color:var(--tx);white-space:nowrap">${lg.sets?lg.sets+'×':''} ${lg.reps?lg.reps+' reps':''} ${lg.kg?'· '+lg.kg+' kg':''}</span>
+          </div>`;
+        }).join('')}
+      </div>`;
+    }).join('')}
+  </div>`;
 }
 function toggleExercise(wIdx,exIdx){
   ensureToday();const key=wIdx+'_'+exIdx;
