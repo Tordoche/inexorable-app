@@ -231,6 +231,7 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .tag-trx{background:rgba(110,231,183,.15);color:#6EE7B7}
 .tag-mc{background:rgba(252,211,77,.12);color:#FCD34D}
 .tag-bw{background:rgba(255,255,255,.08);color:var(--tx3)}
+.tag-card{background:rgba(56,189,248,.1);color:#38BDF8}
 .ex-reps{font-size:11px;font-weight:800;color:var(--ac);text-align:right;flex-shrink:0}
 .ex-chk{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;background:rgba(255,255,255,.05)}
 .ex-chk.chk{background:var(--green);border-color:var(--green);color:#000;font-size:13px;font-weight:900;box-shadow:0 0 12px rgba(52,211,153,.35)}
@@ -857,8 +858,8 @@ select.fi{appearance:none}
 <nav class="nav">
   <button class="nb active" id="nav-dash" onclick="showPage('dash')"><span class="nb-icon">🏠</span>Hoy</button>
   <button class="nb" id="nav-daily" onclick="showPage('daily')"><span class="nb-icon">⚡</span>Rutina</button>
-  <button class="nb" id="nav-nutfit" onclick="showPage('nutfit');switchNFTab('fit')"><span class="nb-icon">💪</span>Entreno</button>
-  <button class="nb" id="nav-projects" onclick="showPage('projects')"><span class="nb-icon">🚀</span>Proyectos</button>
+  <button class="nb" id="nav-nutfit" onclick="showPage('nutfit');switchNFTab('fit')"><span class="nb-icon">🏃</span>Salud</button>
+  <button class="nb" id="nav-projects" onclick="showPage('projects')"><span class="nb-icon">🚀</span>Tareas</button>
   <button class="nb" id="nav-finance" onclick="showPage('finance')"><span class="nb-icon">💰</span>Finanzas</button>
 </nav>
 
@@ -1157,6 +1158,32 @@ select.fi{appearance:none}
   </div>
 </div>
 
+<!-- MODAL: BLOCK EDITOR -->
+<div class="ov" id="modal-block-editor">
+  <div class="sheet">
+    <div class="handle"></div>
+    <div class="sh-title" id="block-editor-title">Nuevo bloque</div>
+    <div class="fg"><label class="fl">Nombre del bloque</label><input class="fi" id="be-name" placeholder="Ej: Cardio, Fuerza, HIIT..."></div>
+    <div class="fg"><label class="fl">Descripción</label><input class="fi" id="be-sub" placeholder="Ej: Correr · Bici · Elíptica"></div>
+    <div style="display:flex;gap:10px">
+      <div class="fg" style="flex:1"><label class="fl">Duración (min)</label><input class="fi" id="be-minutes" type="number" placeholder="45"></div>
+      <div class="fg" style="flex:1"><label class="fl">Hora habitual</label><input class="fi" id="be-time" type="time" value="18:30"></div>
+    </div>
+    <div class="fg">
+      <label class="fl">Ejercicios / actividades</label>
+      <div id="be-exercises-list" style="margin-bottom:8px"></div>
+      <div style="display:flex;gap:7px">
+        <input class="fi" id="be-ex-name" placeholder="Nombre del ejercicio o actividad" style="flex:1">
+        <select class="fi" id="be-ex-tag" style="width:70px"><option value="bw">BW</option><option value="mc">MC</option><option value="trx">TRX</option><option value="card">CARD</option></select>
+        <button onclick="beAddExercise()" style="background:var(--ac);color:#000;border:none;border-radius:var(--rs);padding:8px 13px;font-weight:800;cursor:pointer">+</button>
+      </div>
+    </div>
+    <input type="hidden" id="be-wIdx">
+    <button class="btn btn-p" onclick="saveBlockEditor()">Guardar bloque</button>
+    <button class="btn btn-g" onclick="closeOv('modal-block-editor')">Cancelar</button>
+  </div>
+</div>
+
 <!-- RECIPE DETAIL MODAL -->
 <div class="recipe-ov" id="recipe-ov" onclick="if(event.target===this)closeRecipeOv()">
   <div class="recipe-sheet">
@@ -1386,6 +1413,39 @@ function aiQuick(text){
   sendAI();
 }
 
+const APP_DOCS=`
+=== GUÍA INTERNA DE LA APP INEXORABLE ===
+La app tiene 5 secciones en el menú inferior:
+• Hoy (Dashboard): KPIs del día, acciones rápidas, próxima actividad, comidas, entreno resumen, hitos, urgentes.
+• Rutina: Tareas del día (recurrentes y puntuales), hábitos/objetivos de seguimiento, estadísticas, logros.
+• Salud: dos sub-pestañas: Nutrición (macros, comidas del día, tracker de agua, cambiar combinaciones) y Entreno (bloques editables, ejercicios con series/reps/kg, progresión, historial, configuración del plan). Pestaña Progreso: gráfico de peso, fase del entrenamiento.
+• Tareas: Proyectos y tareas con prioridades (urgente/alta/media/tranquila), categorías, subtareas, fechas límite. También aparecen los urgentes en el dashboard.
+• Finanzas: Patrimonio neto, cuentas/ahorros, inversión (acciones + crypto), historial de snapshots.
+
+SISTEMA DE COMIDAS:
+- 5 franjas fijas con combos intercambiables. El usuario elige cuál comer cada día.
+- Al marcar una comida como completada, suman sus macros al total del día.
+- Si el usuario dice que comió algo extra, usar registrar_extra.
+- Si saltó una comida, puede pedirte redistribuir los macros restantes.
+
+SISTEMA DE ENTRENAMIENTO:
+- Los bloques de entrenamiento son editables (añadir, quitar, cambiar nombre, cambiar hora).
+- Cada bloque tiene ejercicios con nombre, tag (mc=mancuernas, trx=TRX/anillas, bw=peso corporal, card=cardio) y heavy (true=más descanso entre series).
+- Se registran series, reps, kg y RIR para seguimiento de progresión.
+- El sistema detecta PRs automáticamente y sugiere peso basándose en la última sesión.
+- Los días de entreno por semana son configurables (qué día toca qué bloque).
+- Hay 3 fases + semana de descarga: F1 Adaptación (10 reps RIR2), F2 Intensificación (8 reps RIR1), F3 Definición (6 reps RIR0), Deload (12 reps RIR3).
+
+SISTEMA XP/NIVEL:
+- Completar tareas da XP. Nivel = XP/100 (simplificado).
+- Hay logros desbloqueables por completar días perfectos, rachas, etc.
+
+JARVIS (IA):
+- Tiene acceso completo al contexto del día: comidas, entreno, tareas, proyectos, peso, finanzas.
+- Puede ejecutar acciones directamente: marcar comidas, registrar extras, marcar ejercicios, registrar peso, añadir/editar/eliminar bloques de entrenamiento.
+- Para ejecutar acciones usa bloques [ACCIÓN:{...}] que la app procesa automáticamente.
+`;
+
 function buildAIContext(){
   ensureToday();
   const today=todayKey();
@@ -1418,7 +1478,7 @@ function buildAIContext(){
 
   const quickNotesText=S.quickNotes.filter(n=>!n.done).slice(0,5).map(n=>`- ${n.text}`).join('\n');
 
-  return `Eres el asistente personal integrado en Inexorable, la app de vida del señor Javi. Conoces todos sus datos en tiempo real. Responde en español, de forma concisa y útil. Cuando recomiendes cambios de comida, especifica el nombre exacto del plato del catálogo disponible.
+  return APP_DOCS+`\nEres el asistente personal integrado en Inexorable, la app de vida del señor Javi. Conoces todos sus datos en tiempo real. Responde en español, de forma concisa y útil. Cuando recomiendes cambios de comida, especifica el nombre exacto del plato del catálogo disponible.
 
 === CONTEXTO ACTUAL (${new Date().toLocaleString('es-ES')}) ===
 
@@ -1430,6 +1490,7 @@ ${mealStatus}
 Kcal acumuladas: ${kcal}/${macros.kcal} | Proteína: ${prot}/${macros.protein}g
 
 ENTRENO DE HOY: ${wo?wo.name+' · '+wo.sub+' · '+exDone+'/'+wo.exercises.length+' ejercicios':'Día de descanso'}
+BLOQUES DISPONIBLES: ${PROGRAM_WORKOUTS.map((w,i)=>i+':'+w.name+(w.time?' @'+w.time:'')).join(', ')}
 
 PROYECTOS URGENTES:
 ${urgentes.slice(0,4).map(p=>`- ${p.text}${p.note?' ('+p.note+')':''}`).join('\n')||'Ninguno'}
@@ -1470,6 +1531,15 @@ Cuando el usuario te pida hacer cambios en la app, incluye bloques [ACCIÓN:{...
 
 • Marcar ejercicio del entreno de hoy como hecho/no hecho:
   [ACCIÓN:{"tipo":"marcar_ejercicio","wIdx":${wIdx??0},"exIdx":0,"hecho":true}]
+
+• Añadir un bloque de entrenamiento nuevo:
+  [ACCIÓN:{"tipo":"añadir_bloque","nombre":"Correr","sub":"Cardio · Exterior","minutos":40,"hora":"07:00","ejercicios":["Carrera continua","Estiramientos"]}]
+
+• Editar un bloque existente (wIdx = índice en BLOQUES DISPONIBLES):
+  [ACCIÓN:{"tipo":"editar_bloque","wIdx":0,"nombre":"Nuevo nombre","minutos":60,"hora":"19:00"}]
+
+• Eliminar un bloque:
+  [ACCIÓN:{"tipo":"eliminar_bloque","wIdx":2}]
 
 IMPORTANTE: Si el usuario dice que comió algo fuera del plan (ej: "comí tostadas con pavo"), usa registrar_extra para añadir esas calorías al cómputo del día y luego recalcula y ajusta las comidas pendientes usando cambiar_comida. Siempre comenta brevemente qué cambios has aplicado.
 
@@ -1718,6 +1788,46 @@ function executeAIActions(text){
     }catch(e){console.warn('Error ejecutando acción:',action,e);}
   });
 
+  // Workout block actions (outside switch to avoid const redeclaration issues)
+  actions.forEach(a=>{
+    try{
+      if(a.tipo==='añadir_bloque'){
+        const block={
+          name:a.nombre||'Nuevo bloque',
+          sub:a.sub||'',
+          minutes:parseInt(a.minutos)||45,
+          time:a.hora||'18:30',
+          exercises:(a.ejercicios||[]).map(e=>typeof e==='string'?{name:e,tag:'bw',heavy:false}:e),
+        };
+        PROGRAM_WORKOUTS.push(block);
+        saveWorkoutPrograms();
+        applied++;
+        showToast('✅ Bloque añadido: '+block.name);
+      }
+      if(a.tipo==='editar_bloque'){
+        const wi=parseInt(a.wIdx);
+        if(PROGRAM_WORKOUTS[wi]){
+          if(a.nombre)PROGRAM_WORKOUTS[wi].name=a.nombre;
+          if(a.sub)PROGRAM_WORKOUTS[wi].sub=a.sub;
+          if(a.minutos)PROGRAM_WORKOUTS[wi].minutes=parseInt(a.minutos);
+          if(a.hora)PROGRAM_WORKOUTS[wi].time=a.hora;
+          saveWorkoutPrograms();
+          applied++;
+          showToast('✅ Bloque actualizado');
+        }
+      }
+      if(a.tipo==='eliminar_bloque'){
+        const wi=parseInt(a.wIdx);
+        if(PROGRAM_WORKOUTS[wi]){
+          PROGRAM_WORKOUTS.splice(wi,1);
+          saveWorkoutPrograms();
+          applied++;
+          showToast('✅ Bloque eliminado');
+        }
+      }
+    }catch(e){console.warn('Error ejecutando acción de bloque:',a,e);}
+  });
+
   if(applied>0){
     saveS();
     renderDash();
@@ -1870,8 +1980,7 @@ function initWorkoutDays(){if(S.workoutSchedule&&Object.keys(S.workoutSchedule).
 function saveWorkoutSchedule(){S.workoutSchedule={...WORKOUT_DAYS};saveS();}
 function renderWorkoutScheduleEditor(){
   const dias=['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
-  const wNames=['Empuje','Tirón','Pierna','Full body'];
-  const wColors=['var(--ac)','var(--pu)','var(--green)','var(--gold)'];
+  const wColors=['var(--ac)','var(--pu)','var(--green)','var(--gold)','var(--tx2)','var(--tx2)','var(--tx2)','var(--tx2)'];
   // Build reverse map: day → wIdx
   const dayToW={...WORKOUT_DAYS};
   return`<div style="overflow-x:auto">
@@ -1880,15 +1989,15 @@ function renderWorkoutScheduleEditor(){
         <td style="padding:3px 6px;color:var(--tx3)">Rutina</td>
         ${dias.map((d,i)=>`<td style="padding:3px 4px;text-align:center;color:var(--tx3)">${d}</td>`).join('')}
       </tr>
-      ${wNames.map((name,wi)=>`<tr>
-        <td style="padding:4px 6px;font-weight:700;color:${wColors[wi]};white-space:nowrap">${name}</td>
+      ${PROGRAM_WORKOUTS.map((pw,wi)=>`<tr>
+        <td style="padding:4px 6px;font-weight:700;color:${wColors[wi]||'var(--tx2)'};white-space:nowrap">${pw.name}</td>
         ${[0,1,2,3,4,5,6].map(d=>{
           const sel=dayToW[d]===wi;
           return`<td style="padding:4px;text-align:center">
             <div onclick="toggleWorkoutDay(${d},${wi})" style="
               width:24px;height:24px;border-radius:6px;margin:auto;cursor:pointer;
-              background:${sel?wColors[wi]:'var(--sf2)'};
-              border:2px solid ${sel?wColors[wi]:'var(--bd)'};
+              background:${sel?(wColors[wi]||'var(--tx2)'):'var(--sf2)'};
+              border:2px solid ${sel?(wColors[wi]||'var(--tx2)'):'var(--bd)'};
               display:flex;align-items:center;justify-content:center;
               font-size:10px;color:${sel?'#fff':'var(--tx3)'}
             ">${sel?'✓':''}</div>
@@ -1909,9 +2018,95 @@ function toggleWorkoutDay(day,wIdx){
   saveWorkoutSchedule();
   renderFit();
 }
-// Cada ejercicio: {name, tag:'mc'|'trx'|'bw', heavy:bool (compuesto=más descanso)}
-const PROGRAM_WORKOUTS=[
-  {name:'Empuje',sub:'Pecho · Hombro · Tríceps',minutes:55,exercises:[
+function deleteWorkoutBlock(wIdx){
+  if(!confirm('¿Eliminar este bloque?'))return;
+  PROGRAM_WORKOUTS.splice(wIdx,1);
+  // Fix WORKOUT_DAYS references (shift indices down)
+  const newDays={};
+  Object.entries(WORKOUT_DAYS).forEach(([d,wi])=>{
+    const wiN=parseInt(wi);
+    if(wiN<wIdx)newDays[d]=wiN;
+    else if(wiN>wIdx)newDays[d]=wiN-1;
+    // else: this day had the deleted block, remove it
+  });
+  Object.keys(WORKOUT_DAYS).forEach(k=>delete WORKOUT_DAYS[k]);
+  Object.assign(WORKOUT_DAYS,newDays);
+  saveWorkoutSchedule();
+  saveWorkoutPrograms();
+  fitWIdx=null;
+  renderFit();
+  showToast('Bloque eliminado');
+}
+let beExercises=[];
+function openBlockEditor(wIdx){
+  const isNew=wIdx===-1;
+  document.getElementById('block-editor-title').textContent=isNew?'Nuevo bloque':'Editar bloque';
+  document.getElementById('be-wIdx').value=wIdx;
+  if(isNew){
+    document.getElementById('be-name').value='';
+    document.getElementById('be-sub').value='';
+    document.getElementById('be-minutes').value=45;
+    document.getElementById('be-time').value='18:30';
+    beExercises=[];
+  } else {
+    const w=PROGRAM_WORKOUTS[wIdx];
+    document.getElementById('be-name').value=w.name;
+    document.getElementById('be-sub').value=w.sub||'';
+    document.getElementById('be-minutes').value=w.minutes||45;
+    document.getElementById('be-time').value=w.time||'18:30';
+    beExercises=(w.exercises||[]).map(e=>({...e}));
+  }
+  renderBeExercises();
+  document.getElementById('modal-block-editor').classList.add('open');
+}
+function renderBeExercises(){
+  const el=document.getElementById('be-exercises-list');
+  if(!el)return;
+  if(!beExercises.length){el.innerHTML='<div style="font-size:10px;color:var(--tx3);padding:4px 0">Sin ejercicios — añade al menos uno</div>';return;}
+  el.innerHTML=beExercises.map((ex,i)=>`
+    <div style="display:flex;align-items:center;gap:7px;padding:6px 0;border-bottom:1px solid var(--bd)">
+      <span style="font-size:11px;flex:1;color:var(--tx)">${ex.name}</span>
+      <span style="font-size:9px;padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.07);color:var(--tx3)">${ex.tag.toUpperCase()}</span>
+      <button onclick="beRemoveEx(${i})" style="background:none;border:none;color:var(--red);font-size:14px;cursor:pointer;padding:2px 5px">✕</button>
+    </div>`).join('');
+}
+function beAddExercise(){
+  const name=document.getElementById('be-ex-name').value.trim();
+  if(!name)return;
+  const tag=document.getElementById('be-ex-tag').value;
+  beExercises.push({name,tag,heavy:tag==='mc'||tag==='trx'});
+  document.getElementById('be-ex-name').value='';
+  renderBeExercises();
+}
+function beRemoveEx(i){
+  beExercises.splice(i,1);
+  renderBeExercises();
+}
+function saveBlockEditor(){
+  const name=document.getElementById('be-name').value.trim();
+  if(!name){showToast('El bloque necesita un nombre');return;}
+  const wIdx=parseInt(document.getElementById('be-wIdx').value);
+  const block={
+    name,
+    sub:document.getElementById('be-sub').value.trim(),
+    minutes:parseInt(document.getElementById('be-minutes').value)||45,
+    time:document.getElementById('be-time').value||'18:30',
+    exercises:[...beExercises],
+  };
+  if(wIdx===-1){
+    PROGRAM_WORKOUTS.push(block);
+  } else {
+    PROGRAM_WORKOUTS[wIdx]={...PROGRAM_WORKOUTS[wIdx],...block};
+  }
+  saveWorkoutPrograms();
+  closeOv('modal-block-editor');
+  fitWIdx=wIdx===-1?PROGRAM_WORKOUTS.length-1:wIdx;
+  renderFit();
+  showToast(wIdx===-1?'Bloque añadido':'Bloque actualizado');
+}
+// Cada ejercicio: {name, tag:'mc'|'trx'|'bw'|'card', heavy:bool (compuesto=más descanso)}
+const DEFAULT_WORKOUTS=[
+  {name:'Empuje',sub:'Pecho · Hombro · Tríceps',minutes:55,time:'18:30',exercises:[
     {name:'Press banca MC',tag:'mc',heavy:true},
     {name:'Press inclinado MC',tag:'mc',heavy:true},
     {name:'Press militar MC',tag:'mc',heavy:true},
@@ -1920,7 +2115,7 @@ const PROGRAM_WORKOUTS=[
     {name:'Extensión tríceps TRX',tag:'trx',heavy:false},
     {name:'Plancha frontal',tag:'bw',heavy:false},
   ]},
-  {name:'Tirón',sub:'Espalda · Bíceps · Remo',minutes:55,exercises:[
+  {name:'Tirón',sub:'Espalda · Bíceps · Remo',minutes:55,time:'18:30',exercises:[
     {name:'Remo invertido TRX',tag:'trx',heavy:true},
     {name:'Dominadas asistidas TRX',tag:'trx',heavy:true},
     {name:'Curl bíceps MC',tag:'mc',heavy:false},
@@ -1929,7 +2124,7 @@ const PROGRAM_WORKOUTS=[
     {name:'Curl martillo MC',tag:'mc',heavy:false},
     {name:'Plancha lateral TRX',tag:'trx',heavy:false},
   ]},
-  {name:'Pierna',sub:'Cuádriceps · Glúteo · Isquios',minutes:60,exercises:[
+  {name:'Pierna',sub:'Cuádriceps · Glúteo · Isquios',minutes:60,time:'18:30',exercises:[
     {name:'Sentadilla goblet MC',tag:'mc',heavy:true},
     {name:'Peso muerto rumano MC',tag:'mc',heavy:true},
     {name:'Zancadas MC',tag:'mc',heavy:false},
@@ -1939,7 +2134,7 @@ const PROGRAM_WORKOUTS=[
     {name:'Gemelos MC',tag:'mc',heavy:false},
     {name:'Pike TRX',tag:'trx',heavy:false},
   ]},
-  {name:'Full body',sub:'Fuerza + Metabólico',minutes:50,exercises:[
+  {name:'Full body',sub:'Fuerza + Metabólico',minutes:50,time:'18:30',exercises:[
     {name:'Sentadilla goblet',tag:'bw',heavy:true},
     {name:'Press banca MC',tag:'mc',heavy:true},
     {name:'Remo TRX',tag:'trx',heavy:true},
@@ -1949,6 +2144,18 @@ const PROGRAM_WORKOUTS=[
     {name:'Plancha lateral TRX',tag:'trx',heavy:false},
   ]},
 ];
+let PROGRAM_WORKOUTS=DEFAULT_WORKOUTS;
+function initWorkoutPrograms(){
+  if(S.workoutPrograms&&S.workoutPrograms.length){
+    PROGRAM_WORKOUTS=S.workoutPrograms;
+  } else {
+    PROGRAM_WORKOUTS=DEFAULT_WORKOUTS.map(w=>({...w,exercises:[...w.exercises]}));
+  }
+}
+function saveWorkoutPrograms(){
+  S.workoutPrograms=PROGRAM_WORKOUTS.map(w=>({...w,exercises:[...w.exercises]}));
+  saveS();
+}
 
 // ─── STATE ────────────────────────────────────────────────
 let S={};
@@ -1993,6 +2200,7 @@ function loadS(){
   S.projects.forEach(p=>{if(!p.subtasks)p.subtasks=[];if(p.expanded===undefined)p.expanded=false;});
   if(!S.achievements)S.achievements={};
   initWorkoutDays();
+  initWorkoutPrograms();
   if(!S.quickNotes)S.quickNotes=[];
 }
 
@@ -2020,7 +2228,7 @@ function showPage(id){
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   const nb=document.getElementById('nav-'+id);if(nb)nb.classList.add('active');
-  const metas={dash:'Hoy',daily:'Rutina Diaria',nutfit:'Nutrición & Fitness',projects:'Proyectos & Metas',finance:'💰 Finanzas'};
+  const metas={dash:'Hoy',daily:'Rutina Diaria',nutfit:'Salud',projects:'Tareas',finance:'💰 Finanzas'};
   document.getElementById('hdr-meta').textContent=metas[id]||'Inexorable';
   if(id==='dash') renderDash();
   if(id==='daily'){renderToday();renderHabits();renderLogros();}
@@ -2180,7 +2388,7 @@ function renderNextActivity(){
     const allEx=[...w.exercises,...customEx].filter(ex=>!hidden.includes(ex.name));
     const exDone=allEx.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
     if(exDone<allEx.length){
-      const woTime=(S.workoutTime||'07:00');
+      const woTime=(w.time||S.workoutTime||'18:30');
       cands.push({type:'workout',time:woTime,label:w.name,sub:w.sub,done:exDone,total:allEx.length,wIdx});
     }
   }
@@ -3014,6 +3222,18 @@ function renderFit(){
   <!-- Configuración -->
   <div class="card" style="margin-top:10px">
     <div class="card-t" style="margin-bottom:10px">⚙ Configuración del plan</div>
+    <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:8px">Bloques de entrenamiento</div>
+    <button onclick="openBlockEditor(-1)" style="width:100%;padding:9px;background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.25);border-radius:var(--rs);font-size:11px;font-weight:700;color:var(--ac);cursor:pointer;margin-bottom:8px">+ Nuevo bloque</button>
+    ${PROGRAM_WORKOUTS.map((pw,wi)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--bd)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700">${pw.name}</div>
+          <div style="font-size:9px;color:var(--tx3)">${pw.sub||''} · ${pw.minutes||45} min${pw.time?' · '+pw.time:''} · ${pw.exercises?pw.exercises.length:0} ejercicios</div>
+        </div>
+        <button onclick="openBlockEditor(${wi});event.stopPropagation()" style="background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:4px 9px;font-size:10px;font-weight:700;color:var(--tx2);cursor:pointer">✏</button>
+        <button onclick="deleteWorkoutBlock(${wi});event.stopPropagation()" style="background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:var(--rs);padding:4px 9px;font-size:10px;font-weight:700;color:var(--red);cursor:pointer">🗑</button>
+      </div>`).join('')}
+    <div style="height:1px;background:var(--bd);margin:12px 0"></div>
     <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:8px">Días de entrenamiento</div>
     ${renderWorkoutScheduleEditor()}
     <div style="height:1px;background:var(--bd);margin:12px 0"></div>
