@@ -1874,6 +1874,7 @@ let projFilter={cat:'all',pri:'all'};
 let timerInt=null,timerSec=0;
 let motivLock=false;
 let nfTab='nutri';
+let fitWIdx=null; // null = auto (hoy, o próximo si es descanso)
 let feedbackState={rpe:null,energy:null,sleep:null};
 
 function defaultS(){
@@ -1950,7 +1951,7 @@ function switchNFTab(tab){
     document.getElementById('nf-tab-'+t).classList.toggle('act',t===tab);
   });
   if(tab==='nutri')renderNutri();
-  if(tab==='fit')renderFit();
+  if(tab==='fit'){fitWIdx=null;renderFit();}
   if(tab==='prog')renderProg();
 }
 function renderNutFit(){switchNFTab(nfTab);}
@@ -2599,82 +2600,112 @@ function cycleMealCombo(slot){
 function selectCombo(slot,idx){S.mealCombos[slot]=idx;saveS();renderNutri();showToast('✅ Opción '+String.fromCharCode(65+idx)+' guardada');}
 
 // ─── FITNESS ──────────────────────────────────────────────
+function switchFitTab(wi){fitWIdx=wi;renderFit();}
+
 function renderFit(){
   ensureToday();
-  const dow=new Date().getDay(),wIdx=WORKOUT_DAYS[dow];
-  const c=document.getElementById('fit-content');
-  if(wIdx===undefined){
-    // Día de descanso — muestra próximos entrenos
-    const dias=['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
-    const nextWoList=[];
-    for(let off=1;off<=7;off++){const d=(dow+off)%7;if(WORKOUT_DAYS[d]!==undefined){nextWoList.push({d,w:PROGRAM_WORKOUTS[WORKOUT_DAYS[d]]});if(nextWoList.length>=3)break;}}
-    c.innerHTML=`<div class="card" style="text-align:center;padding:24px 16px">
-      <div style="font-size:36px;margin-bottom:8px">🧘</div>
-      <div style="font-size:15px;font-weight:800;margin-bottom:5px">Día de descanso</div>
-      <div style="font-size:12px;color:var(--tx2);margin-bottom:16px">Cardio LISS opcional · 30-45 min suave<br>Caminar, bicicleta, nadar</div>
-      <div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Próximos entrenos</div>
-      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        ${nextWoList.map(({d,w})=>`<div style="background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 12px;text-align:left;min-width:90px">
-          <div style="font-weight:800;color:var(--ac);font-size:11px;margin-bottom:2px">${dias[d]}</div>
-          <div style="font-weight:700;font-size:12px">${w.name}</div>
-          <div style="color:var(--tx2);font-size:10px">${w.sub}</div>
-        </div>`).join('')}
-      </div>
-    </div>
-    ${renderExHistory(WORKOUT_DAYS[(dow+1)%7]??0)}`;
-    return;
+  const dow=new Date().getDay();
+  const todayWIdx=WORKOUT_DAYS[dow]; // undefined si hoy es descanso
+  const dias=['Do','Lu','Ma','Mi','Ju','Sá','Vi']; // js: 0=Dom,1=Lun,...
+  const diasLabel=['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+
+  // Auto-selección: hoy si hay entreno; si no, el próximo
+  if(fitWIdx===null){
+    if(todayWIdx!==undefined){
+      fitWIdx=todayWIdx;
+    } else {
+      for(let off=1;off<=7;off++){
+        const d=(dow+off)%7;
+        if(WORKOUT_DAYS[d]!==undefined){fitWIdx=WORKOUT_DAYS[d];break;}
+      }
+    }
   }
+  const wIdx=fitWIdx??0;
   const w=PROGRAM_WORKOUTS[wIdx];
   const phase=getCurrentPhase();
   const phaseLabel=phase==='deload'?'Descarga':phase===1?'Adaptación':phase===2?'Intensificación':'Definición pico';
-  // Combinar ejercicios del plan + personalizados, filtrar ocultos
+
+  // Mapa wIdx → día de semana
+  const wIdxToDay={};
+  Object.entries(WORKOUT_DAYS).forEach(([d,wi])=>{wIdxToDay[wi]=parseInt(d);});
+
+  // Ejercicios combinados (plan + personalizados, sin ocultos)
   const hidden=(S.hiddenExercises||{})[wIdx]||[];
   const customEx=(S.customExercises||{})[wIdx]||[];
   const allExercises=[...w.exercises,...customEx].filter(ex=>!hidden.includes(ex.name));
   const exDone=allExercises.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
   const allDone=exDone===allExercises.length;
+  const isToday=todayWIdx===wIdx;
+  const isRestDay=todayWIdx===undefined;
 
+  const c=document.getElementById('fit-content');
   c.innerHTML=`
-  <!-- Cabecera sesión -->
+
+  <!-- ── Tabs de rutinas ── -->
+  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none">
+    ${PROGRAM_WORKOUTS.map((pw,wi)=>{
+      const day=wIdxToDay[wi];
+      const isTodayTab=todayWIdx===wi;
+      const isSel=wi===wIdx;
+      return`<button onclick="switchFitTab(${wi})" style="
+        flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:1px;
+        padding:7px 12px;border-radius:var(--rs);border:2px solid ${isSel?'var(--ac)':'var(--bd)'};
+        background:${isSel?'rgba(249,115,22,.12)':'var(--sf2)'};cursor:pointer;
+        color:${isSel?'var(--ac)':'var(--tx2)'};min-width:72px">
+        <span style="font-size:11px;font-weight:${isSel?'800':'600'}">${pw.name}</span>
+        <span style="font-size:9px;opacity:.7">${day!==undefined?diasLabel[day]:'—'}</span>
+        ${isTodayTab?'<span style="font-size:8px;background:var(--ac);color:#fff;padding:1px 5px;border-radius:99px;font-weight:800;margin-top:1px">HOY</span>':''}
+      </button>`;
+    }).join('')}
+  </div>
+
+  <!-- ── Banner descanso (solo si hoy no toca entrenar) ── -->
+  ${isRestDay&&isToday||isRestDay&&!isToday?`<div style="background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:var(--rs);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+    <span style="font-size:18px">🧘</span>
+    <div>
+      <div style="font-size:11px;font-weight:700;color:var(--green)">Hoy es día de descanso</div>
+      <div style="font-size:10px;color:var(--tx2)">Cardio LISS 30-45 min opcional · Estás viendo: ${w.name}</div>
+    </div>
+  </div>`:''}
+
+  <!-- ── Cabecera de la rutina seleccionada ── -->
   <div class="wo-snap" style="margin-bottom:10px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div>
         <div class="wo-name">${w.name} <span style="color:var(--tx2);font-weight:500;font-size:13px">· ${w.sub}</span></div>
-        <div class="wo-sub">~${w.minutes} min · Fase ${typeof phase==='number'?phase:'—'}: ${phaseLabel}</div>
+        <div class="wo-sub">~${w.minutes} min · ${allExercises.length} ejercicios · ${phaseLabel}</div>
       </div>
-      <button onclick="openRoutineEditor(${wIdx})" style="background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:4px 10px;font-size:10px;font-weight:700;color:var(--tx2);cursor:pointer;white-space:nowrap">✏ Editar</button>
+      <button onclick="openRoutineEditor(${wIdx})" style="background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);padding:4px 10px;font-size:10px;font-weight:700;color:var(--tx2);cursor:pointer;white-space:nowrap;flex-shrink:0">✏ Editar</button>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-      <div class="wo-prog" style="flex:1"><div class="wo-prog-fill" style="width:${Math.round(exDone/w.exercises.length*100)}%"></div></div>
-      <span style="font-size:11px;font-weight:700;color:${allDone?'var(--green)':'var(--tx2)'}">${allDone?'✅ Completado':exDone+'/'+w.exercises.length}</span>
-    </div>
+    ${isToday?`<div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+      <div class="wo-prog" style="flex:1"><div class="wo-prog-fill" style="width:${Math.round(exDone/Math.max(allExercises.length,1)*100)}%"></div></div>
+      <span style="font-size:11px;font-weight:700;color:${allDone?'var(--green)':'var(--tx2)'}">${allDone?'✅ Completado':exDone+'/'+allExercises.length}</span>
+    </div>`:''}
   </div>
 
-  <!-- Lista de ejercicios -->
+  <!-- ── Lista de ejercicios ── -->
   ${allExercises.map((ex,i)=>{
-    const done=!!S.today.exercises[wIdx+'_'+i];
+    const done=isToday&&!!S.today.exercises[wIdx+'_'+i];
     const logKey='exlog_'+todayKey()+'_'+wIdx+'_'+i;
-    const log=(S.exerciseLogs||{})[logKey]||{sets:'',reps:'',kg:''};
+    const log=(S.exerciseLogs||{})[logKey]||{sets:'',reps:'',kg:'',rir:''};
     const exSafe=ex.name.replace(/'/g,'&#39;');
     const lastLog=getLastLog(ex.name,wIdx);
     const pr=getExPR(ex.name);
     const isPR=pr&&log.kg&&parseFloat(log.kg)>=pr.kg;
     const target=getExTarget(ex,phase);
     const restSec=ex.heavy?120:ex.tag==='mc'||ex.tag==='trx'?90:60;
-    // Sugerencia de peso: última sesión. Si completó todas las reps → +2.5kg
     let suggestedKg='';
     if(lastLog&&lastLog.kg){
       const lastKg=parseFloat(lastLog.kg);
       const lastReps=parseInt(lastLog.reps)||0;
       const targetReps=parseInt(target.reps)||0;
-      suggestedKg=lastReps>=targetReps&&targetReps>0?lastKg+2.5:lastKg;
+      suggestedKg=(lastReps>=targetReps&&targetReps>0)?lastKg+2.5:lastKg;
     }
-    return`<div class="ex-card${done?' ex-done':''}" id="ex-card-${wIdx}-${i}">
+    return`<div class="ex-card${done?' ex-done':''}">
       <div class="ex-row">
         <div class="ex-num">${i+1}</div>
         <div style="flex:1;min-width:0">
 
-          <!-- Nombre + tag + PR -->
           <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
             <span class="ex-name" style="margin:0">${ex.name}</span>
             <span class="ex-tag tag-${ex.tag}">${ex.tag.toUpperCase()}</span>
@@ -2682,73 +2713,70 @@ function renderFit(){
             ${pr&&!isPR?`<span style="font-size:9px;color:var(--tx3)">PR: ${pr.kg} kg</span>`:''}
           </div>
 
-          <!-- Target de la fase -->
           <div style="font-size:9px;color:var(--ac);font-weight:700;margin-top:3px">
-            Objetivo: ${target.sets}×${target.reps} · RIR ${target.rir}
+            Objetivo fase: ${target.sets}×${target.reps} reps · RIR ${target.rir}
           </div>
 
-          <!-- Última sesión + sugerencia -->
-          ${lastLog&&lastLog.kg?`<div style="font-size:9px;color:var(--tx3);margin-top:1px">
-            Última vez: ${lastLog.sets?lastLog.sets+'×':''}${lastLog.reps?lastLog.reps+' reps · ':''}${lastLog.kg} kg
-            ${suggestedKg&&suggestedKg!==parseFloat(lastLog.kg)?` · <span style="color:var(--green);font-weight:700">↑ hoy: ${suggestedKg} kg</span>`:''}
-          </div>`:'<div style="font-size:9px;color:var(--tx3);margin-top:1px">Sin historial previo · ¡primera vez!</div>'}
+          ${lastLog&&lastLog.kg
+            ?`<div style="font-size:9px;color:var(--tx3);margin-top:1px">
+              Última sesión: ${lastLog.sets?lastLog.sets+'×':''}${lastLog.reps?lastLog.reps+' reps · ':''}${lastLog.kg} kg
+              ${suggestedKg&&suggestedKg!==parseFloat(lastLog.kg)?` · <span style="color:var(--green);font-weight:700">↑ hoy: ${suggestedKg} kg</span>`:''}
+            </div>`
+            :`<div style="font-size:9px;color:var(--tx3);margin-top:1px">Primera vez · ¡a por ello!</div>`}
 
-          <!-- Inputs de registro -->
-          <div style="display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap">
+          ${isToday?`<div style="display:flex;gap:5px;margin-top:8px;align-items:flex-end;flex-wrap:wrap">
             <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
               <span style="font-size:8px;color:var(--tx3);text-transform:uppercase">Series</span>
-              <input class="ex-inp" type="number" inputmode="numeric" placeholder="${target.sets}" value="${log.sets}" oninput="saveExLog('${logKey}','sets',this.value)" ${done?'disabled':''} style="width:54px;text-align:center">
+              <input class="ex-inp" type="number" inputmode="numeric" placeholder="${target.sets}" value="${log.sets}" oninput="saveExLog('${logKey}','sets',this.value)" ${done?'disabled':''} style="width:52px;text-align:center">
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
               <span style="font-size:8px;color:var(--tx3);text-transform:uppercase">Reps</span>
-              <input class="ex-inp" type="number" inputmode="numeric" placeholder="${target.reps}" value="${log.reps}" oninput="saveExLog('${logKey}','reps',this.value)" ${done?'disabled':''} style="width:54px;text-align:center">
+              <input class="ex-inp" type="number" inputmode="numeric" placeholder="${target.reps}" value="${log.reps}" oninput="saveExLog('${logKey}','reps',this.value)" ${done?'disabled':''} style="width:52px;text-align:center">
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
               <span style="font-size:8px;color:var(--tx3);text-transform:uppercase">Kg</span>
-              <input class="ex-inp" type="number" inputmode="decimal" placeholder="${suggestedKg||'—'}" value="${log.kg}" oninput="saveExLog('${logKey}','kg',this.value)" ${done?'disabled':''} style="width:54px;text-align:center">
+              <input class="ex-inp" type="number" inputmode="decimal" placeholder="${suggestedKg||'—'}" value="${log.kg}" oninput="saveExLog('${logKey}','kg',this.value)" ${done?'disabled':''} style="width:52px;text-align:center">
             </div>
             <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-              <span style="font-size:8px;color:var(--tx3);text-transform:uppercase">RIR real</span>
-              <select class="ex-inp" onchange="saveExLog('${logKey}','rir',this.value)" ${done?'disabled':''} style="width:54px;text-align:center;padding:5px 2px">
+              <span style="font-size:8px;color:var(--tx3);text-transform:uppercase">RIR</span>
+              <select class="ex-inp" onchange="saveExLog('${logKey}','rir',this.value)" ${done?'disabled':''} style="width:52px;text-align:center;padding:5px 2px">
                 <option value="">—</option>
                 ${[0,1,2,3,4].map(r=>`<option value="${r}" ${log.rir==r?'selected':''}>${r}</option>`).join('')}
               </select>
             </div>
-          </div>
+          </div>`:''}
 
-          <!-- Botones de acción -->
           <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
-            <button onclick="askAISubstitute('${exSafe}');event.stopPropagation()" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.22);color:var(--ac);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer">🤖 Alternativa</button>
+            <button onclick="askAISubstitute('${exSafe}');event.stopPropagation()" style="background:rgba(249,115,22,.1);border:1px solid rgba(249,115,22,.22);color:var(--ac);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer">🤖 Alt.</button>
             <button onclick="openExercise('${exSafe}');event.stopPropagation()" style="background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.18);color:var(--pu);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer">ℹ Técnica</button>
-            ${done?`<button onclick="startTimer(${restSec},'Descanso · ${exSafe}');event.stopPropagation()" style="background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.2);color:var(--green);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer">⏱ ${restSec}s descanso</button>`:''}
+            ${done?`<button onclick="startTimer(${restSec},'Descanso · ${exSafe}');event.stopPropagation()" style="background:rgba(5,150,105,.1);border:1px solid rgba(5,150,105,.2);color:var(--green);border-radius:99px;padding:3px 9px;font-size:9px;font-weight:700;cursor:pointer">⏱ ${restSec}s</button>`:''}
           </div>
         </div>
 
-        <!-- Checkbox marcar hecho -->
-        <div class="ex-chk${done?' chk':''}" onclick="toggleExercise(${wIdx},${i})" style="flex-shrink:0">${done?'✓':''}</div>
+        ${isToday?`<div class="ex-chk${done?' chk':''}" onclick="toggleExercise(${wIdx},${i})" style="flex-shrink:0">${done?'✓':''}</div>`:''}
       </div>
     </div>`;
   }).join('')}
 
-  <!-- Botón registrar sesión -->
-  <button onclick="openFeedback()" style="width:100%;margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:800;cursor:pointer">📊 Registrar sesión completa</button>
+  <!-- Registrar sesión (solo si es hoy) -->
+  ${isToday?`<button onclick="openFeedback()" style="width:100%;margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--ac),var(--ac2));color:#fff;border:none;border-radius:var(--r);font-size:13px;font-weight:800;cursor:pointer">📊 Registrar sesión</button>`:''}
 
   <!-- Historial -->
   ${renderExHistory(wIdx)}
 
   <!-- Configuración -->
   <div class="card" style="margin-top:10px">
-    <div class="card-t">⚙ Configuración</div>
+    <div class="card-t">⚙ Configuración del plan</div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">
       <div><div style="font-size:13px;font-weight:600">TRX / Anillas</div><div style="font-size:10px;color:var(--tx3)">Adapta ejercicios a TRX</div></div>
       <div id="sw-trx-fit" class="sw${S.equipment?.trx!==false?' on':''}" onclick="toggleEquip('trx');this.classList.toggle('on')"></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">
-      <div><div style="font-size:13px;font-weight:600">Máquina cable</div><div style="font-size:10px;color:var(--tx3)">Adapta ejercicios a MC</div></div>
+      <div><div style="font-size:13px;font-weight:600">Máquina cable</div><div style="font-size:10px;color:var(--tx3)">Adapta ejercicios a máquina cable</div></div>
       <div id="sw-mc-fit" class="sw${S.equipment?.mc!==false?' on':''}" onclick="toggleEquip('mc');this.classList.toggle('on')"></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0">
-      <div><div style="font-size:13px;font-weight:600">Fase del plan</div><div style="font-size:10px;color:var(--tx3)">Fase ${typeof phase==='number'?phase:'Descarga'} activa</div></div>
+      <div><div style="font-size:13px;font-weight:600">Fase activa</div><div style="font-size:10px;color:var(--tx3)">${phaseLabel} en curso</div></div>
       <select onchange="updateForcedPhase(this.value)" style="background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:5px 8px;font-size:11px;color:var(--tx);outline:none">
         <option value="" ${!S.forcedPhase?'selected':''}>Auto</option>
         <option value="deload" ${S.forcedPhase==='deload'?'selected':''}>Descarga</option>
