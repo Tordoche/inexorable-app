@@ -6,19 +6,19 @@
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#080C10",
-  "theme_color": "#080C10",
+  "background_color": "#000000",
+  "theme_color": "#000000",
   "orientation": "portrait-primary",
   "lang": "es",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='120' fill='%23080C10'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E",
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='120' fill='%23080C10'/%3E%3Ctext x='256' y='340' font-size='280' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E",
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "maskable"
@@ -27,7 +27,7 @@
   "categories": ["productivity", "health", "finance"],
   "screenshots": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 844'%3E%3Crect width='390' height='844' fill='%23080C10'/%3E%3C/svg%3E",
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 844'%3E%3Crect width='390' height='844' fill='%23000000'/%3E%3C/svg%3E",
       "sizes": "390x844",
       "type": "image/svg+xml",
       "form_factor": "narrow",

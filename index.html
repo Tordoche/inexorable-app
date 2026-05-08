@@ -4,13 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Inexorable">
-<meta name="theme-color" content="#080C10">
+<meta name="theme-color" content="#000000">
 <meta name="description" content="Tu sistema de vida personal">
 <link rel="manifest" href="manifest.json">
-<!-- Apple touch icon — PNG generado vía canvas en initApp() para compatibilidad iOS -->
-<link rel="apple-touch-icon" id="ati" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23080C10'/%3E%3Ctext x='90' y='120' font-size='100' text-anchor='middle'%3E%E2%9A%A1%3C/text%3E%3C/svg%3E">
+<!-- App icon -->
+<link rel="apple-touch-icon" id="ati" href="icon.svg">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
 <title>Inexorable</title>
 <style>
 :root{
@@ -567,36 +568,51 @@ select.fi{appearance:none}
 
 /* ── DARK MODE ──────────────────────────────────────────── */
 [data-dark]{
-  --bg:#06090F;--sf:#0F1520;--sf2:#161E2B;--sf3:#1C2535;
-  --tx:#F0F4FF;--tx2:rgba(240,244,255,.55);--tx3:rgba(240,244,255,.28);
-  --ac:#F97316;--ac2:#EA580C;
-  --gold:#FBBF24;--gold2:#D97706;
-  --green:#34D399;--orange:#FB923C;--red:#F87171;--pu:#C084FC;
-  --bd:rgba(255,255,255,.09);--bd2:rgba(255,255,255,.15);
-  --sh:0 4px 32px rgba(0,0,0,.65),0 1px 0 rgba(255,255,255,.04);
-  --glow-ac:rgba(249,115,22,.25);--glow-pu:rgba(192,132,252,.2);
+  --bg:#000000;--sf:#07090F;--sf2:#0C0F18;--sf3:#111520;
+  --tx:#D8EEFF;--tx2:rgba(160,210,255,.6);--tx3:rgba(120,175,225,.32);
+  --ac:#00E5FF;--ac2:#00B8D4;
+  --gold:#FFD740;--gold2:#FFAB00;
+  --green:#00E676;--orange:#FF6B35;--red:#FF5252;--pu:#7C4DFF;
+  --bd:rgba(0,229,255,.11);--bd2:rgba(0,229,255,.22);
+  --sh:0 4px 32px rgba(0,0,0,.9),0 1px 0 rgba(0,229,255,.05);
+  --glow-ac:rgba(0,229,255,.28);--glow-pu:rgba(124,77,255,.22);
 }
 [data-dark] body::before{
-  background:radial-gradient(ellipse 80% 60% at 20% -10%,rgba(249,115,22,.06),transparent),
-             radial-gradient(ellipse 60% 50% at 85% 110%,rgba(249,115,22,.04),transparent)
+  background:radial-gradient(ellipse 80% 60% at 20% -10%,rgba(0,229,255,.05),transparent),
+             radial-gradient(ellipse 60% 50% at 85% 110%,rgba(0,184,212,.04),transparent)
 }
-[data-dark] .hdr{background:rgba(6,9,15,.9)}
-[data-dark] .nav{background:rgba(6,9,15,.94)}
-[data-dark] .dash-hero{background:linear-gradient(145deg,rgba(249,115,22,.09),rgba(249,115,22,.04));border-color:rgba(249,115,22,.18)}
-[data-dark] .dash-hero::before{background:radial-gradient(circle,rgba(249,115,22,.1),transparent 70%)}
-[data-dark] .dash-hero::after{background:radial-gradient(circle,rgba(249,115,22,.06),transparent 70%)}
-[data-dark] .kpi,[data-dark] .fin-kpi{background:rgba(0,0,0,.35);border-color:rgba(255,255,255,.08)}
-[data-dark] .wo-snap{background:linear-gradient(145deg,rgba(249,115,22,.09),rgba(249,115,22,.04));border-color:rgba(249,115,22,.18)}
-[data-dark] .fin-hero{background:linear-gradient(145deg,rgba(52,211,153,.08),rgba(56,189,248,.04));border-color:rgba(52,211,153,.18)}
-[data-dark] .sheet{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.04));border-top-color:rgba(255,255,255,.12);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px)}
-[data-dark] .ai-sheet{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.05));border-top-color:rgba(249,115,22,.2);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px)}
-[data-dark] .ai-msg.ai .ai-bubble{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.1)}
-[data-dark] .ai-input-row{background:transparent}
-[data-dark] .ai-inp{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.1)}
-[data-dark] .recipe-sheet{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.04));border-top-color:rgba(255,255,255,.12);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px)}
-[data-dark] .toast{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.12)}
-[data-dark] .motiv-card{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.1)}
-[data-dark] .timer-modal{background:linear-gradient(160deg,#050d14,#0a0d18)}
+[data-dark] .hdr{background:rgba(0,0,0,.93);border-bottom-color:rgba(0,229,255,.14)}
+[data-dark] .nav{background:rgba(0,0,0,.96);border-top-color:rgba(0,229,255,.12)}
+[data-dark] .dash-hero{background:linear-gradient(145deg,rgba(0,229,255,.07),rgba(0,229,255,.02));border-color:rgba(0,229,255,.18)}
+[data-dark] .dash-hero::before{background:radial-gradient(circle,rgba(0,229,255,.1),transparent 70%)}
+[data-dark] .dash-hero::after{background:radial-gradient(circle,rgba(0,229,255,.05),transparent 70%)}
+[data-dark] .kpi,[data-dark] .fin-kpi{background:rgba(0,0,0,.55);border-color:rgba(0,229,255,.1)}
+[data-dark] .wo-snap{background:linear-gradient(145deg,rgba(0,229,255,.07),rgba(0,229,255,.02));border-color:rgba(0,229,255,.18)}
+[data-dark] .fin-hero{background:linear-gradient(145deg,rgba(0,230,118,.06),rgba(0,229,255,.03));border-color:rgba(0,230,118,.15)}
+[data-dark] .sheet{background:rgba(5,7,14,.98);border-top-color:rgba(0,229,255,.22);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px)}
+[data-dark] .ai-sheet{background:rgba(3,5,12,.98);border-top-color:rgba(0,229,255,.28);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px)}
+[data-dark] .ai-msg.ai .ai-bubble{background:rgba(0,229,255,.06);border-color:rgba(0,229,255,.15)}
+[data-dark] .ai-input-row{background:rgba(0,0,0,.6)}
+[data-dark] .ai-inp{background:rgba(0,229,255,.05);border-color:rgba(0,229,255,.18)}
+[data-dark] .ai-inp:focus{border-color:rgba(0,229,255,.5)}
+[data-dark] .recipe-sheet{background:rgba(5,7,14,.98);border-top-color:rgba(0,229,255,.18);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px)}
+[data-dark] .toast{background:rgba(0,10,20,.9);border-color:rgba(0,229,255,.3);color:#D8EEFF}
+[data-dark] .motiv-card{background:rgba(0,229,255,.05);border-color:rgba(0,229,255,.12)}
+[data-dark] .timer-modal{background:linear-gradient(160deg,#000003,#030812)}
+[data-dark] .xp-bar-fill{background:linear-gradient(90deg,var(--ac),#7C4DFF)}
+[data-dark] .nb.active{color:var(--ac)}
+[data-dark] .nb.active::before{background:var(--ac);box-shadow:0 0 10px rgba(0,229,255,.6)}
+[data-dark] .ai-fab{background:linear-gradient(135deg,#00B8D4,#0072FF);box-shadow:0 4px 24px rgba(0,229,255,.4),0 0 0 1px rgba(0,229,255,.2)}
+[data-dark] .hdr-logo span{color:var(--ac)}
+[data-dark] .hdr-badge,[data-dark] .hdr-chip{background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.25);color:var(--ac)}
+[data-dark] .ai-send{background:linear-gradient(135deg,var(--ac),#0072FF)}
+[data-dark] .ai-msg.user .ai-bubble{background:linear-gradient(135deg,#004D5C,#002040)}
+[data-dark] .tc.done{box-shadow:0 0 10px rgba(0,230,118,.3)}
+[data-dark] .ex-chk.chk{box-shadow:0 0 12px rgba(0,230,118,.35)}
+[data-dark] .nf-tab.act{background:rgba(0,229,255,.1);color:var(--ac);box-shadow:0 1px 8px rgba(0,229,255,.2)}
+[data-dark] .fb.act{background:rgba(0,229,255,.1);border-color:rgba(0,229,255,.3);color:var(--ac)}
+[data-dark] .qa-btn.qa-primary{background:linear-gradient(135deg,rgba(0,229,255,.12),rgba(0,229,255,.06));border-color:rgba(0,229,255,.35);color:var(--ac)}
+[data-dark] .qa-btn.qa-pu{background:rgba(124,77,255,.1);border-color:rgba(124,77,255,.25)}
 </style>
 </head>
 <body>
@@ -4523,26 +4539,7 @@ function removeCustomExercise(wIdx,customIdx){
   renderRoutineEditorList(wIdx);
 }
 function generateAppIcon(){
-  try{
-    const c=document.createElement('canvas');
-    c.width=c.height=180;
-    const ctx=c.getContext('2d');
-    // Fondo con esquinas redondeadas
-    ctx.fillStyle='#080C10';
-    ctx.beginPath();
-    const r=40,w=180,h=180;
-    ctx.moveTo(r,0);ctx.lineTo(w-r,0);ctx.quadraticCurveTo(w,0,w,r);
-    ctx.lineTo(w,h-r);ctx.quadraticCurveTo(w,h,w-r,h);
-    ctx.lineTo(r,h);ctx.quadraticCurveTo(0,h,0,h-r);
-    ctx.lineTo(0,r);ctx.quadraticCurveTo(0,0,r,0);
-    ctx.closePath();ctx.fill();
-    // Rayo ⚡ centrado
-    ctx.font='100px serif';ctx.textAlign='center';ctx.textBaseline='middle';
-    ctx.fillText('⚡',90,95);
-    const png=c.toDataURL('image/png');
-    const link=document.getElementById('ati');
-    if(link)link.href=png;
-  }catch(e){}
+  // icon.svg is already set as href — nothing to generate
 }
 
 function registerSW(){
@@ -4572,6 +4569,25 @@ function initApp(){
   registerSW();
   checkStorageQuota();
   renderDash();
+
+  // ── Day-change detection ──
+  function onNewDay(){
+    ensureToday();saveS();
+    renderDash();renderToday();
+    // If fitness tab visible, reset exercise checkmarks display
+    if(document.getElementById('page-nutfit')?.classList.contains('active'))renderFit();
+    showToast('🌅 ¡Nuevo día! Tareas reiniciadas','var(--ac)');
+  }
+  // Check every minute
+  setInterval(()=>{if(S.today.date&&S.today.date!==todayKey())onNewDay();},60000);
+  // Check when app comes back to foreground
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&S.today.date&&S.today.date!==todayKey())onNewDay();
+  });
+  // Check on any user interaction (tap/click) to catch overnight idle
+  document.addEventListener('touchstart',()=>{
+    if(S.today.date&&S.today.date!==todayKey())onNewDay();
+  },{passive:true,once:false});
 }
 loadS();
 checkSetup(); // siempre devuelve true, arranca directo
