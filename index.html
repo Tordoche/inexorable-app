@@ -672,8 +672,8 @@ select.fi{appearance:none}
 <!-- ══ NUTRICIÓN + FITNESS ════════════════════════════════ -->
 <div class="page" id="page-nutfit">
   <div class="nf-tabs">
-    <div class="nf-tab act" id="nf-tab-nutri" onclick="switchNFTab('nutri')">🥗 Nutrición</div>
-    <div class="nf-tab" id="nf-tab-fit" onclick="switchNFTab('fit')">💪 Entreno</div>
+    <div class="nf-tab" id="nf-tab-nutri" onclick="switchNFTab('nutri')">🥗 Nutrición</div>
+    <div class="nf-tab act" id="nf-tab-fit" onclick="switchNFTab('fit')">💪 Entreno</div>
     <div class="nf-tab" id="nf-tab-prog" onclick="switchNFTab('prog')">📊 Progreso</div>
   </div>
   <div id="nf-nutri">
@@ -828,7 +828,7 @@ select.fi{appearance:none}
 <nav class="nav">
   <button class="nb active" id="nav-dash" onclick="showPage('dash')"><span class="nb-icon">🏠</span>Hoy</button>
   <button class="nb" id="nav-daily" onclick="showPage('daily')"><span class="nb-icon">⚡</span>Rutina</button>
-  <button class="nb" id="nav-nutfit" onclick="showPage('nutfit');switchNFTab('nutri')"><span class="nb-icon">🥗</span>Salud</button>
+  <button class="nb" id="nav-nutfit" onclick="showPage('nutfit');switchNFTab('fit')"><span class="nb-icon">💪</span>Entreno</button>
   <button class="nb" id="nav-projects" onclick="showPage('projects')"><span class="nb-icon">🚀</span>Proyectos</button>
   <button class="nb" id="nav-finance" onclick="showPage('finance')"><span class="nb-icon">💰</span>Finanzas</button>
 </nav>
@@ -1873,7 +1873,7 @@ let selEmoji='🎯',selColor='#00E5FF',selDays=[1,2,3,4,5];
 let projFilter={cat:'all',pri:'all'};
 let timerInt=null,timerSec=0;
 let motivLock=false;
-let nfTab='nutri';
+let nfTab='fit';
 let fitWIdx=null; // null = auto (hoy, o próximo si es descanso)
 let feedbackState={rpe:null,energy:null,sleep:null};
 
@@ -2659,12 +2659,12 @@ function renderFit(){
     }).join('')}
   </div>
 
-  <!-- ── Banner descanso (solo si hoy no toca entrenar) ── -->
-  ${isRestDay&&isToday||isRestDay&&!isToday?`<div style="background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:var(--rs);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
+  <!-- ── Banner descanso ── -->
+  ${isRestDay?`<div style="background:rgba(5,150,105,.08);border:1px solid rgba(5,150,105,.2);border-radius:var(--rs);padding:8px 12px;margin-bottom:10px;display:flex;align-items:center;gap:8px">
     <span style="font-size:18px">🧘</span>
     <div>
-      <div style="font-size:11px;font-weight:700;color:var(--green)">Hoy es día de descanso</div>
-      <div style="font-size:10px;color:var(--tx2)">Cardio LISS 30-45 min opcional · Estás viendo: ${w.name}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--green)">Hoy es día de descanso · Cardio LISS 30-45 min opcional</div>
+      <div style="font-size:10px;color:var(--tx2)">Revisando rutina: <strong>${w.name}</strong> — los inputs se activan cuando toque entrenar</div>
     </div>
   </div>`:''}
 
