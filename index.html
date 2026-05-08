@@ -569,7 +569,7 @@ select.fi{appearance:none}
 <div class="hdr" id="main-hdr">
   <div class="hdr-row">
     <div>
-      <div class="hdr-logo">daily<span>OS</span></div>
+      <div class="hdr-logo">Inexo<span>rable</span></div>
       <div class="hdr-meta" id="hdr-meta">Dashboard</div>
     </div>
     <div class="hdr-right">
@@ -599,9 +599,8 @@ select.fi{appearance:none}
     </div>
   </div>
 
-  <!-- ENTRENO DE HOY -->
-  <div class="sec"><div class="sec-title">💪 Entreno de hoy</div><button class="sec-link" onclick="showPage('nutfit');switchNFTab('fit')">Ir →</button></div>
-  <div id="dash-workout"></div>
+  <!-- PRÓXIMA ACTIVIDAD -->
+  <div id="dash-next-activity" style="margin-bottom:10px"></div>
 
   <!-- RUTINA DE HOY -->
   <div class="sec">
@@ -621,13 +620,17 @@ select.fi{appearance:none}
   <div class="card" style="padding:6px 12px" id="dash-tasks-wrap"><div id="dash-tasks"></div></div>
 
   <!-- COMIDAS HOY -->
-  <div class="sec"><div class="sec-title">🥗 Comidas de hoy</div><button class="sec-link" onclick="showPage('nutfit');switchNFTab('nutri')">Detalles →</button></div>
+  <div class="sec"><div class="sec-title">🥗 Comidas de hoy</div><button class="sec-link" onclick="showPage('nutfit');switchNFTab('nutri')">Ver →</button></div>
   <!-- macro progress inline -->
   <div style="margin-bottom:8px">
     <div class="macro-row"><div class="macro-lbl">Calorías</div><div class="macro-bar-w"><div class="macro-fill" id="dash-kcal-bar" style="width:0%;background:linear-gradient(90deg,var(--orange),var(--gold))"></div></div><div class="macro-val"><span id="dash-kcal-cur">0</span>/<span id="dash-kcal-tgt">2300</span></div></div>
     <div class="macro-row"><div class="macro-lbl">Proteína</div><div class="macro-bar-w"><div class="macro-fill" id="dash-prot-bar" style="width:0%;background:var(--ac)"></div></div><div class="macro-val"><span id="dash-prot-cur">0</span>/<span id="dash-prot-tgt">176</span>g</div></div>
   </div>
   <div id="dash-meals"></div>
+
+  <!-- ENTRENO (mini card debajo de comidas) -->
+  <div class="sec"><div class="sec-title">💪 Entreno de hoy</div><button class="sec-link" onclick="showPage('nutfit');switchNFTab('fit')">Ir →</button></div>
+  <div id="dash-workout"></div>
 
   <!-- PRÓXIMOS HITOS -->
   <div class="sec"><div class="sec-title">🚀 Próximos hitos</div><button class="sec-link" onclick="showPage('projects')">Ver todos →</button></div>
@@ -1439,6 +1442,9 @@ Cuando el usuario te pida hacer cambios en la app, incluye bloques [ACCIÓN:{...
 • Registrar peso corporal:
   [ACCIÓN:{"tipo":"registrar_peso","kg":82.5}]
 
+• Cambiar un ejercicio del entreno por otro (p.ej. si el usuario no puede hacerlo):
+  [ACCIÓN:{"tipo":"cambiar_ejercicio","wIdx":${wIdx??0},"idx":0,"nombre":"Fondos en silla"}]
+
 • Marcar ejercicio del entreno de hoy como hecho/no hecho:
   [ACCIÓN:{"tipo":"marcar_ejercicio","wIdx":${wIdx??0},"exIdx":0,"hecho":true}]
 
@@ -1640,6 +1646,12 @@ function executeAIActions(text){
           applied++;
           break;
 
+        case 'cambiar_ejercicio':
+          if(!S.today.exerciseOverrides)S.today.exerciseOverrides={};
+          S.today.exerciseOverrides[(action.wIdx??0)+'_'+(action.idx??0)]=action.nombre;
+          applied++;
+          break;
+
         case 'registrar_extra':
           ensureToday();
           if(!S.today.extraFood) S.today.extraFood=[];
@@ -1825,7 +1837,50 @@ const MEAL_COMBOS={
   preworkout:['Plátano con mantequilla cacahuete','Tostada con miel y queso','Arroz con jamón york','Batido rápido whey','Dátiles con almendras'],
   dinner:['Tortilla francesa + ensalada','Pechuga plancha + verduras','Crema verduras + huevos','Tofu salteado (sin carne)','Ensalada completa + queso'],
 };
-const WORKOUT_DAYS={1:0,2:1,4:2,6:3};
+let WORKOUT_DAYS={1:0,2:1,4:2,6:3}; // can be overridden by S.workoutSchedule
+function initWorkoutDays(){if(S.workoutSchedule&&Object.keys(S.workoutSchedule).length)WORKOUT_DAYS=Object.assign({},S.workoutSchedule);}
+function saveWorkoutSchedule(){S.workoutSchedule={...WORKOUT_DAYS};saveS();}
+function renderWorkoutScheduleEditor(){
+  const dias=['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
+  const wNames=['Empuje','Tirón','Pierna','Full body'];
+  const wColors=['var(--ac)','var(--pu)','var(--green)','var(--gold)'];
+  // Build reverse map: day → wIdx
+  const dayToW={...WORKOUT_DAYS};
+  return`<div style="overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:10px">
+      <tr>
+        <td style="padding:3px 6px;color:var(--tx3)">Rutina</td>
+        ${dias.map((d,i)=>`<td style="padding:3px 4px;text-align:center;color:var(--tx3)">${d}</td>`).join('')}
+      </tr>
+      ${wNames.map((name,wi)=>`<tr>
+        <td style="padding:4px 6px;font-weight:700;color:${wColors[wi]};white-space:nowrap">${name}</td>
+        ${[0,1,2,3,4,5,6].map(d=>{
+          const sel=dayToW[d]===wi;
+          return`<td style="padding:4px;text-align:center">
+            <div onclick="toggleWorkoutDay(${d},${wi})" style="
+              width:24px;height:24px;border-radius:6px;margin:auto;cursor:pointer;
+              background:${sel?wColors[wi]:'var(--sf2)'};
+              border:2px solid ${sel?wColors[wi]:'var(--bd)'};
+              display:flex;align-items:center;justify-content:center;
+              font-size:10px;color:${sel?'#fff':'var(--tx3)'}
+            ">${sel?'✓':''}</div>
+          </td>`;
+        }).join('')}
+      </tr>`).join('')}
+    </table>
+  </div>`;
+}
+function toggleWorkoutDay(day,wIdx){
+  // If this day already has this workout, remove it
+  if(WORKOUT_DAYS[day]===wIdx){
+    delete WORKOUT_DAYS[day];
+  } else {
+    // Remove any existing workout for this day
+    WORKOUT_DAYS[day]=wIdx;
+  }
+  saveWorkoutSchedule();
+  renderFit();
+}
 // Cada ejercicio: {name, tag:'mc'|'trx'|'bw', heavy:bool (compuesto=más descanso)}
 const PROGRAM_WORKOUTS=[
   {name:'Empuje',sub:'Pecho · Hombro · Tríceps',minutes:55,exercises:[
@@ -1882,7 +1937,7 @@ function defaultS(){
     setupDone:false,startDate:new Date().toISOString().slice(0,10),
     currentWeight:80,weightHistory:[],measureHistory:[],
     today:{date:'',meals:{},exercises:{},water:0},
-    mealCombos:{},forcedPhase:'',equipment:{trx:true,mc:true},
+    mealCombos:{},forcedPhase:'',equipment:{trx:true,mc:true},workoutSchedule:null,
     sessionFeedback:[],
     habits:[],recurringTasks:[],tasks:{},
     projects:null,quickNotes:[],
@@ -1909,6 +1964,7 @@ function loadS(){
   // ensure all projects have subtasks & expanded fields
   S.projects.forEach(p=>{if(!p.subtasks)p.subtasks=[];if(p.expanded===undefined)p.expanded=false;});
   if(!S.achievements)S.achievements={};
+  initWorkoutDays();
   if(!S.quickNotes)S.quickNotes=[];
 }
 
@@ -2016,6 +2072,85 @@ function showMotiv(xp){
 function closeMotivBtn(){document.getElementById('motiv-ov').classList.remove('show');motivLock=false;}
 
 // ─── DASHBOARD ────────────────────────────────────────────
+function renderNextActivity(){
+  ensureToday();
+  const now=new Date();
+  const h=now.getHours(),m=now.getMinutes();
+  const timeStr=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+  const el=document.getElementById('dash-next-activity');
+  if(!el)return;
+
+  // Candidatos: comidas, entreno, tareas con hora
+  const cands=[];
+
+  // Próxima comida no hecha
+  for(const slot of MEAL_SLOTS){
+    if(!(S.today.meals[slot]&&S.today.meals[slot].completed)&&MEAL_TIMES[slot]>timeStr){
+      const cIdx=S.mealCombos[slot]||0;
+      const cName=(MEAL_COMBOS[slot]||[])[cIdx]||'';
+      cands.push({type:'meal',time:MEAL_TIMES[slot],label:MEAL_LABELS[slot].split(' ')[0],sub:cName,kcal:MEAL_KCAL[slot],slot});
+      break;
+    }
+  }
+
+  // Entreno de hoy si no terminado
+  const dow=now.getDay();
+  const wIdx=WORKOUT_DAYS[dow];
+  if(wIdx!==undefined){
+    const w=PROGRAM_WORKOUTS[wIdx];
+    const hidden=(S.hiddenExercises||{})[wIdx]||[];
+    const customEx=(S.customExercises||{})[wIdx]||[];
+    const allEx=[...w.exercises,...customEx].filter(ex=>!hidden.includes(ex.name));
+    const exDone=allEx.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
+    if(exDone<allEx.length){
+      const woTime=(S.workoutTime||'07:00');
+      cands.push({type:'workout',time:woTime,label:w.name,sub:w.sub,done:exDone,total:allEx.length,wIdx});
+    }
+  }
+
+  // Próxima tarea con hora pendiente
+  const tasks=getTodayTasks(todayKey());
+  const nextTask=tasks.find(t=>!t.done&&t.time&&t.time>timeStr);
+  if(nextTask)cands.push({type:'task',time:nextTask.time,label:nextTask.name,sub:'Tarea programada'});
+
+  cands.sort((a,b)=>a.time.localeCompare(b.time));
+  const next=cands[0];
+
+  if(!next){
+    // Todo hecho o nada programado
+    const allMealsDone=MEAL_SLOTS.every(s=>S.today.meals[s]&&S.today.meals[s].completed);
+    el.innerHTML=`<div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">${allMealsDone?'🎉':'✅'}</div>
+      <div>
+        <div style="font-size:13px;font-weight:800">¡Día completado!</div>
+        <div style="font-size:11px;color:var(--tx2)">No hay más actividades pendientes hoy</div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  const icons={meal:'🍽',workout:'💪',task:'⚡'};
+  const colors={meal:'var(--gold)',workout:'var(--ac)',task:'var(--pu)'};
+  const timeDiff=next.time>timeStr?(()=>{
+    const [nh,nm]=next.time.split(':').map(Number);
+    const diff=(nh*60+nm)-(h*60+m);
+    return diff<60?diff+' min':Math.floor(diff/60)+'h '+(diff%60)+'min';
+  })():'Ahora';
+
+  el.innerHTML=`<div class="card" style="padding:14px 16px;border-left:3px solid ${colors[next.type]}">
+    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:${colors[next.type]};margin-bottom:6px">⏱ Próxima actividad · ${next.time} (en ${timeDiff})</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="font-size:28px">${icons[next.type]}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:14px;font-weight:800">${next.label}</div>
+        <div style="font-size:11px;color:var(--tx2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${next.sub||''}</div>
+        ${next.type==='meal'?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">${next.kcal} kcal · <button onclick="showPage('nutfit');switchNFTab('nutri')" style="background:none;border:none;color:var(--ac);font-size:10px;font-weight:700;cursor:pointer;padding:0">Ver comida →</button></div>`:''}
+        ${next.type==='workout'?`<div style="font-size:10px;color:var(--tx3);margin-top:2px">${next.done}/${next.total} ejercicios · <button onclick="showPage('nutfit');switchNFTab('fit')" style="background:none;border:none;color:var(--ac);font-size:10px;font-weight:700;cursor:pointer;padding:0">Ir al entreno →</button></div>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
 function renderDash(){
   ensureToday();checkStreak();updateXPUI();
   const h=new Date().getHours();
@@ -2036,6 +2171,7 @@ function renderDash(){
   (S.today.extraFood||[]).forEach(e=>{kcal+=e.kcal||0;prot+=e.prot||0;});
   const urgentes=S.projects.filter(p=>!p.done&&p.priority==='urgent').length;
   document.getElementById('kpi-rutina').textContent=`${tasksDone}/${tasksTotal}`;
+  renderNextActivity();
   document.getElementById('kpi-kcal').textContent=kcal||'—';
   const dow2=new Date().getDay();const wIdx2=WORKOUT_DAYS[dow2];
   const wo2=wIdx2!==undefined?PROGRAM_WORKOUTS[wIdx2]:null;
@@ -2766,7 +2902,10 @@ function renderFit(){
 
   <!-- Configuración -->
   <div class="card" style="margin-top:10px">
-    <div class="card-t">⚙ Configuración del plan</div>
+    <div class="card-t" style="margin-bottom:10px">⚙ Configuración del plan</div>
+    <div style="font-size:11px;font-weight:700;color:var(--tx2);margin-bottom:8px">Días de entrenamiento</div>
+    ${renderWorkoutScheduleEditor()}
+    <div style="height:1px;background:var(--bd);margin:12px 0"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)">
       <div><div style="font-size:13px;font-weight:600">TRX / Anillas</div><div style="font-size:10px;color:var(--tx3)">Adapta ejercicios a TRX</div></div>
       <div id="sw-trx-fit" class="sw${S.equipment?.trx!==false?' on':''}" onclick="toggleEquip('trx');this.classList.toggle('on')"></div>
