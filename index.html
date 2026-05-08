@@ -232,6 +232,28 @@ body::before{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
 .tag-mc{background:rgba(252,211,77,.12);color:#FCD34D}
 .tag-bw{background:rgba(255,255,255,.08);color:var(--tx3)}
 .tag-card{background:rgba(56,189,248,.1);color:#38BDF8}
+/* SESSION HISTORY */
+.sess-card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--rs);padding:13px 14px;margin-bottom:8px;cursor:pointer;transition:border-color .2s}
+.sess-card:active{border-color:var(--ac)}
+.sess-card.sess-today{border-color:rgba(249,115,22,.35);background:rgba(249,115,22,.04)}
+.sess-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.sess-date{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--tx3)}
+.sess-block{font-size:13px;font-weight:800;letter-spacing:-.2px}
+.sess-sub{font-size:10px;color:var(--tx2);margin-top:1px}
+.sess-kpis{display:flex;gap:8px;flex-wrap:wrap}
+.sess-kpi{background:var(--sf2);border:1px solid var(--bd);border-radius:8px;padding:6px 10px;text-align:center;flex:1;min-width:60px}
+.sess-kpi-val{font-size:13px;font-weight:900;color:var(--ac)}
+.sess-kpi-lbl{font-size:8px;color:var(--tx3);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.sess-ex-list{margin-top:9px;border-top:1px solid var(--bd);padding-top:8px}
+.sess-ex-row{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:11px;border-bottom:1px solid rgba(0,0,0,.04)}
+.sess-ex-row:last-child{border-bottom:none}
+/* Sparkline bars for exercise progress */
+.spark-wrap{display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:6px}
+.spark-bar{flex:1;border-radius:2px 2px 0 0;min-height:3px;transition:height .3s}
+.pr-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--sf2);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:6px}
+.pr-name{font-size:12px;font-weight:700;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pr-val{font-size:14px;font-weight:900;color:var(--gold);white-space:nowrap}
+.pr-date{font-size:9px;color:var(--tx3);margin-top:1px}
 .ex-reps{font-size:11px;font-weight:800;color:var(--ac);text-align:right;flex-shrink:0}
 .ex-chk{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,.15);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s;background:rgba(255,255,255,.05)}
 .ex-chk.chk{background:var(--green);border-color:var(--green);color:#000;font-size:13px;font-weight:900;box-shadow:0 0 12px rgba(52,211,153,.35)}
@@ -721,7 +743,14 @@ select.fi{appearance:none}
   </div>
   <div id="nf-fit" style="display:none"><div id="fit-content"></div></div>
   <div id="nf-prog" style="display:none">
-    <div class="sec"><div class="sec-title">⚖ Peso</div><button onclick="logWeight()" style="background:var(--ac);color:#000;border:none;border-radius:99px;padding:4px 11px;font-size:10px;font-weight:800;cursor:pointer">+ Anotar</button></div>
+    <!-- Sesiones de entreno -->
+    <div class="sec"><div class="sec-title">💪 Sesiones registradas</div><button onclick="switchProgView('sessions')" style="background:none;border:none;color:var(--ac);font-size:11px;font-weight:700;cursor:pointer" id="prog-sessions-link">Ver todas →</button></div>
+    <div id="prog-session-history"></div>
+    <!-- PRs globales -->
+    <div class="sec"><div class="sec-title">🏆 Records personales</div></div>
+    <div id="prog-prs"></div>
+    <!-- Peso -->
+    <div class="sec"><div class="sec-title">⚖ Peso corporal</div><button onclick="logWeight()" style="background:var(--ac);color:#000;border:none;border-radius:99px;padding:4px 11px;font-size:10px;font-weight:800;cursor:pointer">+ Anotar</button></div>
     <div class="chart-wrap"><div class="card-t">Evolución</div><svg id="weight-chart" class="chart-svg"></svg></div>
     <div class="prog-stat-grid" id="prog-stats"></div>
     <div class="sec"><div class="sec-title">Rutina de entrenamiento</div></div>
@@ -981,12 +1010,13 @@ select.fi{appearance:none}
 <div class="ov" id="feedback-modal">
   <div class="sheet">
     <div class="handle"></div>
-    <h2 style="font-size:16px;font-weight:900;margin-bottom:4px">¿Cómo te sentiste hoy?</h2>
-    <p style="font-size:10px;color:var(--tx2);margin-bottom:12px">Ayuda a ajustar el plan a tus días buenos y malos</p>
+    <h2 style="font-size:16px;font-weight:900;margin-bottom:4px">📊 Finalizar sesión</h2>
+    <p style="font-size:10px;color:var(--tx2);margin-bottom:12px">Guarda el resumen de hoy en el historial de entrenamientos</p>
     <div class="fg"><label class="fl">Esfuerzo percibido (RPE 1-10)</label><div class="fb-grid" id="rpe-grid"></div></div>
-    <div class="fg"><label class="fl">Energía</label><div class="fb-grid" id="energy-grid"></div></div>
-    <div class="fg"><label class="fl">Sueño (horas)</label><div class="fb-grid" id="sleep-grid"></div></div>
-    <button class="btn btn-p" onclick="saveFeedback()">Guardar</button>
+    <div class="fg"><label class="fl">Energía durante el entreno</label><div class="fb-grid" id="energy-grid"></div></div>
+    <div class="fg"><label class="fl">Sueño anoche (horas)</label><div class="fb-grid" id="sleep-grid"></div></div>
+    <div class="fg"><label class="fl">Notas (opcional)</label><input class="fi" id="fb-notes" placeholder="Ej: Me pesé bien, dolor en el hombro..." maxlength="120"></div>
+    <button class="btn btn-p" onclick="saveFeedback()">💾 Guardar sesión</button>
     <button class="btn btn-g" onclick="closeOv('feedback-modal')">Saltar</button>
   </div>
 </div>
@@ -1491,6 +1521,7 @@ Kcal acumuladas: ${kcal}/${macros.kcal} | Proteína: ${prot}/${macros.protein}g
 
 ENTRENO DE HOY: ${wo?wo.name+' · '+wo.sub+' · '+exDone+'/'+wo.exercises.length+' ejercicios':'Día de descanso'}
 BLOQUES DISPONIBLES: ${PROGRAM_WORKOUTS.map((w,i)=>i+':'+w.name+(w.time?' @'+w.time:'')).join(', ')}
+ÚLTIMAS SESIONES: ${(S.workoutSessions||[]).slice(0,3).map(s=>`${s.date} ${s.blockName} vol:${s.volume||0}kg${s.rpe?' RPE'+s.rpe:''}${s.prs&&s.prs.length?' PRs:'+s.prs.join(','):''}`).join(' | ')||'Sin sesiones registradas'}
 
 PROYECTOS URGENTES:
 ${urgentes.slice(0,4).map(p=>`- ${p.text}${p.note?' ('+p.note+')':''}`).join('\n')||'Ninguno'}
@@ -2173,7 +2204,7 @@ function defaultS(){
     currentWeight:80,weightHistory:[],measureHistory:[],
     today:{date:'',meals:{},exercises:{},water:0},
     mealCombos:{},forcedPhase:'',equipment:{trx:true,mc:true},workoutSchedule:null,
-    sessionFeedback:[],
+    sessionFeedback:[],workoutSessions:[],
     habits:[],recurringTasks:[],tasks:{},
     projects:null,quickNotes:[],
     xp:0,level:1,streak:0,lastDate:'',allDone:0,totalXP:0,
@@ -3258,39 +3289,81 @@ function renderFit(){
   </div>`;
 }
 function renderExHistory(wIdx){
-  if(!S.exerciseLogs||wIdx===undefined||wIdx===null)return'';
+  // Use workoutSessions if available — richer data
+  const sessions=(S.workoutSessions||[]).filter(s=>s.wIdx===wIdx).slice(0,8);
   const w=PROGRAM_WORKOUTS[wIdx];if(!w)return'';
-  const days=[];const today=new Date();
-  for(let d=1;d<=30;d++){
-    const dt=new Date(today);dt.setDate(dt.getDate()-d);
-    const k=dt.toISOString().split('T')[0];
-    const hasLog=w.exercises.some((_,i)=>S.exerciseLogs['exlog_'+k+'_'+wIdx+'_'+i]?.kg||S.exerciseLogs['exlog_'+k+'_'+wIdx+'_'+i]?.sets);
-    if(hasLog)days.push(k);
-    if(days.length>=4)break;
+  // Fall back to raw exerciseLogs if no sessions
+  if(!sessions.length){
+    if(!S.exerciseLogs)return'';
+    const days=[];const today=new Date();
+    for(let d=1;d<=30;d++){
+      const dt=new Date(today);dt.setDate(dt.getDate()-d);
+      const k=dt.toISOString().split('T')[0];
+      const hasLog=w.exercises.some((_,i)=>S.exerciseLogs['exlog_'+k+'_'+wIdx+'_'+i]?.kg||S.exerciseLogs['exlog_'+k+'_'+wIdx+'_'+i]?.sets);
+      if(hasLog)days.push(k);
+      if(days.length>=4)break;
+    }
+    if(!days.length)return'';
+    return`<div class="card" style="margin-top:10px">
+      <div class="card-t" style="margin-bottom:8px">📅 Últimas sesiones</div>
+      ${days.map(dk=>{
+        const label=new Date(dk+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+        return`<div style="margin-bottom:10px">
+          <div style="font-size:10px;font-weight:700;color:var(--ac);margin-bottom:5px;text-transform:capitalize">${label}</div>
+          ${w.exercises.map((ex,i)=>{
+            const lg=(S.exerciseLogs||{})['exlog_'+dk+'_'+wIdx+'_'+i];
+            if(!lg||(!lg.sets&&!lg.reps&&!lg.kg))return'';
+            const pr=getExPR(ex.name);const isHistPR=pr&&lg.kg&&parseFloat(lg.kg)>=pr.kg&&pr.date===dk;
+            return`<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--bd);font-size:11px">
+              <span style="color:var(--tx2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">${ex.name}</span>
+              <span style="font-weight:700">${lg.sets?lg.sets+'×':''}${lg.reps?lg.reps:''} ${lg.kg?'<span style="color:var(--gold)">'+lg.kg+' kg</span>':''}${isHistPR?' 🏆':''}</span>
+            </div>`;
+          }).join('')}
+        </div>`;
+      }).join('')}
+    </div>`;
   }
-  if(!days.length)return'';
+  // Rich history from workoutSessions: show per-exercise kg sparklines
+  const exerciseData={};
+  sessions.forEach(sess=>{
+    (sess.exercises||[]).forEach(ex=>{
+      if(!ex.kg)return;
+      if(!exerciseData[ex.name])exerciseData[ex.name]=[];
+      exerciseData[ex.name].unshift({date:sess.date,kg:parseFloat(ex.kg),sets:ex.sets,reps:ex.reps});
+    });
+  });
+  const today=todayKey();
   return`<div class="card" style="margin-top:10px">
-    <div class="card-t" style="margin-bottom:10px">📅 Historial — últimas ${days.length} sesiones</div>
-    ${days.map(dk=>{
-      const dt=new Date(dk+'T12:00:00');
-      const label=dt.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'short'});
-      return`<div style="margin-bottom:12px">
-        <div style="font-size:10px;font-weight:700;color:var(--ac);margin-bottom:6px;text-transform:capitalize;letter-spacing:.3px">${label}</div>
-        ${w.exercises.map((ex,i)=>{
-          const lg=(S.exerciseLogs||{})['exlog_'+dk+'_'+wIdx+'_'+i];
-          if(!lg||(!lg.sets&&!lg.reps&&!lg.kg))return'';
-          const pr=getExPR(ex.name);
-          const isHistPR=pr&&lg.kg&&parseFloat(lg.kg)>=pr.kg&&pr.date===dk;
-          return`<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd);font-size:11px">
-            <span style="color:var(--tx2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">${ex.name}</span>
-            <span style="font-weight:700;color:var(--tx);white-space:nowrap">
-              ${lg.sets?lg.sets+'×':''}${lg.reps?lg.reps+' reps':''}${lg.kg?' · <strong>'+lg.kg+' kg</strong>':''}
-              ${isHistPR?' 🏆':''}
-            </span>
-          </div>`;
-        }).join('')}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="card-t">📈 Progresión de cargas — ${sessions.length} sesión${sessions.length!==1?'es':''}</div>
+      <button onclick="switchProgView('sessions');showPage('nutfit');switchNFTab('prog')" style="background:none;border:none;color:var(--ac);font-size:10px;font-weight:700;cursor:pointer">Ver historial →</button>
+    </div>
+    ${Object.entries(exerciseData).map(([name,hist])=>{
+      const vals=hist.map(h=>h.kg);
+      const maxV=Math.max(...vals,1);const minV=Math.min(...vals);
+      const range=maxV-minV||1;
+      const pr=getExPR(name);
+      const latest=hist[hist.length-1];
+      const prev=hist.length>1?hist[hist.length-2]:null;
+      const delta=prev?(latest.kg-prev.kg):0;
+      const deltaStr=delta>0?`<span style="color:var(--green);font-size:9px;font-weight:700">+${delta} kg ↑</span>`:delta<0?`<span style="color:var(--red);font-size:9px">↓${Math.abs(delta)} kg</span>`:'';
+      return`<div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--bd)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5px">
+          <div>
+            <div style="font-size:12px;font-weight:700">${name}${pr&&latest.kg>=pr.kg?' 🏆':''}</div>
+            <div style="font-size:9px;color:var(--tx3);margin-top:1px">
+              ${latest.sets?latest.sets+'×':''}${latest.reps?latest.reps+' reps · ':''}
+              <strong style="color:var(--gold)">${latest.kg} kg</strong>
+              ${deltaStr} ${pr?'· PR: '+pr.kg+' kg':''}
+            </div>
+          </div>
+          <div style="font-size:9px;color:var(--tx3)">${hist.length} sesiones</div>
+        </div>
+        <div class="spark-wrap">
+          ${vals.map((v,i)=>`<div class="spark-bar" style="height:${Math.max(15,Math.round(((v-minV)/range)*32)+4)}px;background:${i===vals.length-1?'var(--ac)':'rgba(249,115,22,.3)'}" title="${v} kg"></div>`).join('')}
+        </div>
       </div>`;
-    }).join('')}
+    }).join('')||'<div style="font-size:10px;color:var(--tx3)">Registra pesos en los ejercicios para ver la progresión</div>'}
   </div>`;
 }
 function toggleExercise(wIdx,exIdx){
@@ -3308,6 +3381,80 @@ function toggleExercise(wIdx,exIdx){
 }
 
 // ─── PROGRESS ─────────────────────────────────────────────
+let progView='summary'; // 'summary' | 'sessions'
+function switchProgView(v){progView=v;renderProg();}
+
+function renderSessionHistory(){
+  const sessions=S.workoutSessions||[];
+  const today=todayKey();
+  // PR section
+  const prs=S.exPRs||{};
+  const prEl=document.getElementById('prog-prs');
+  if(prEl){
+    const prList=Object.entries(prs).sort((a,b)=>b[1].kg-a[1].kg).slice(0,10);
+    if(!prList.length){prEl.innerHTML='<div style="font-size:10px;color:var(--tx3);padding:4px 0">Aún no tienes PRs registrados. ¡Empieza a entrenar!</div>';}
+    else{prEl.innerHTML=prList.map(([name,pr])=>`
+      <div class="pr-item">
+        <div style="font-size:16px;flex-shrink:0">🏆</div>
+        <div style="flex:1;min-width:0">
+          <div class="pr-name">${name}</div>
+          <div class="pr-date">${pr.date?new Date(pr.date+'T12:00:00').toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'2-digit'}):''}</div>
+        </div>
+        <div class="pr-val">${pr.kg} kg</div>
+      </div>`).join('');}
+  }
+  // Session history
+  const el=document.getElementById('prog-session-history');
+  if(!el)return;
+  if(!sessions.length){
+    el.innerHTML='<div style="font-size:10px;color:var(--tx3);padding:6px 0">Sin sesiones guardadas todavía. Completa un entreno y pulsa "Registrar sesión".</div>';
+    return;
+  }
+  const energyLabels=['😴 Baja','😐 Normal','⚡ Alta','🔥 Máxima'];
+  const limit=progView==='sessions'?sessions.length:4;
+  const shown=sessions.slice(0,limit);
+  el.innerHTML=shown.map(sess=>{
+    const isToday=sess.date===today;
+    const dateLabel=new Date(sess.date+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+    const volStr=sess.volume>=1000?(sess.volume/1000).toFixed(1)+'t':(sess.volume||0)+'kg';
+    const prsLine=sess.prs&&sess.prs.length?`<span style="font-size:9px;background:rgba(249,115,22,.12);color:var(--ac);border-radius:4px;padding:1px 6px;font-weight:700">🏆 ${sess.prs.length} PR${sess.prs.length>1?'s':''}</span>`:'';
+    const rpeStr=sess.rpe?`RPE ${sess.rpe}`:'';
+    const energyStr=sess.energy!=null?energyLabels[sess.energy]:'';
+    // Compact exercise list
+    const exRows=sess.exercises?sess.exercises.filter(e=>e.kg||e.sets).map(e=>`
+      <div class="sess-ex-row">
+        <span style="color:var(--tx2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">${e.name}</span>
+        <span style="font-weight:700;color:var(--tx);white-space:nowrap">
+          ${e.sets?e.sets+'×':''}${e.reps?e.reps:''} ${e.kg?'<span style="color:var(--gold)">'+e.kg+' kg</span>':''}
+        </span>
+      </div>`).join(''):'';
+    return`<div class="sess-card${isToday?' sess-today':''}" onclick="this.querySelector('.sess-ex-list').style.display=this.querySelector('.sess-ex-list').style.display==='none'?'block':'none'">
+      <div class="sess-head">
+        <div>
+          <div class="sess-date">${dateLabel}${isToday?' · HOY':''}</div>
+          <div class="sess-block">${sess.blockName}</div>
+          <div class="sess-sub">${sess.blockSub||''}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${prsLine}</div>
+      </div>
+      <div class="sess-kpis">
+        <div class="sess-kpi"><div class="sess-kpi-val">${sess.exercisesDone||0}/${sess.exercisesTotal||0}</div><div class="sess-kpi-lbl">Ejercicios</div></div>
+        <div class="sess-kpi"><div class="sess-kpi-val">${volStr}</div><div class="sess-kpi-lbl">Volumen</div></div>
+        ${rpeStr?`<div class="sess-kpi"><div class="sess-kpi-val">${sess.rpe}/10</div><div class="sess-kpi-lbl">RPE</div></div>`:''}
+        ${energyStr?`<div class="sess-kpi"><div class="sess-kpi-val" style="font-size:10px">${energyStr}</div><div class="sess-kpi-lbl">Energía</div></div>`:''}
+      </div>
+      <div class="sess-ex-list" style="display:none">${exRows||'<div style="font-size:10px;color:var(--tx3);padding:4px 0">Sin datos de ejercicios registrados</div>'}</div>
+      <div style="text-align:center;font-size:9px;color:var(--tx3);margin-top:6px">Toca para ver detalles ▼</div>
+    </div>`;
+  }).join('');
+  if(sessions.length>4&&progView==='summary'){
+    el.innerHTML+=`<button onclick="switchProgView('sessions')" style="width:100%;padding:10px;background:none;border:1px solid var(--bd);border-radius:var(--rs);font-size:11px;font-weight:700;color:var(--tx2);cursor:pointer;margin-top:4px">Ver las ${sessions.length} sesiones →</button>`;
+  }
+  if(progView==='sessions'&&sessions.length>4){
+    el.innerHTML=`<button onclick="switchProgView('summary')" style="width:100%;padding:8px;background:none;border:1px solid var(--bd);border-radius:var(--rs);font-size:10px;font-weight:700;color:var(--tx3);cursor:pointer;margin-bottom:8px">← Volver al resumen</button>`+el.innerHTML;
+  }
+}
+
 function renderProg(){
   const d=daysSince(),week=Math.ceil(d/7);
   const phase=getCurrentPhase();
@@ -3332,6 +3479,7 @@ function renderProg(){
       <span style="color:var(--orange)">■ F2 Intensificación</span>
       <span style="color:var(--ac)">■ F3 Definición</span>
     </div>`;
+  renderSessionHistory();
   renderWeightChart();
   document.getElementById('forced-phase').value=S.forcedPhase||'';
   document.getElementById('sw-trx').classList.toggle('on',S.equipment?.trx!==false);
@@ -3390,7 +3538,43 @@ function setFB(k,v){feedbackState[k]=v;renderFeedbackGrids();}
 function saveFeedback(){
   S.sessionFeedback=S.sessionFeedback||[];
   S.sessionFeedback.push({...feedbackState,date:todayKey()});
-  saveS();closeOv('feedback-modal');showToast('📊 Feedback guardado');
+  // ── Compile full workout session ──
+  const dow=new Date().getDay();
+  const wIdx=WORKOUT_DAYS[dow];
+  if(wIdx!==undefined){
+    const w=PROGRAM_WORKOUTS[wIdx];
+    const today=todayKey();
+    const hidden=(S.hiddenExercises||{})[wIdx]||[];
+    const customEx=(S.customExercises||{})[wIdx]||[];
+    const allEx=[...w.exercises,...customEx].filter(ex=>!hidden.includes(ex.name));
+    let totalVol=0;const prsHit=[];
+    const exData=allEx.map((ex,i)=>{
+      const logKey='exlog_'+today+'_'+wIdx+'_'+i;
+      const lg=(S.exerciseLogs||{})[logKey]||{};
+      const sets=parseFloat(lg.sets)||0,reps=parseFloat(lg.reps)||0,kg=parseFloat(lg.kg)||0;
+      const vol=sets*reps*kg;totalVol+=vol;
+      const pr=getExPR(ex.name);
+      if(kg>0&&pr&&kg>=pr.kg)prsHit.push(ex.name);
+      return{name:ex.name,sets:lg.sets||'',reps:lg.reps||'',kg:lg.kg||'',rir:lg.rir||'',
+        done:!!S.today.exercises[wIdx+'_'+i],vol};
+    });
+    const exercisesDone=allEx.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
+    S.workoutSessions=S.workoutSessions||[];
+    // Remove duplicate for same day+block (only keep latest)
+    S.workoutSessions=S.workoutSessions.filter(s=>!(s.date===today&&s.wIdx===wIdx));
+    S.workoutSessions.unshift({
+      id:today+'_'+wIdx,date:today,wIdx,blockName:w.name,blockSub:w.sub||'',
+      exercises:exData,volume:Math.round(totalVol),
+      exercisesDone,exercisesTotal:allEx.length,
+      rpe:feedbackState.rpe,energy:feedbackState.energy,sleep:feedbackState.sleep,
+      notes:document.getElementById('fb-notes')?.value||'',prs:prsHit,
+    });
+    // Cap sessions history to last 120
+    if(S.workoutSessions.length>120)S.workoutSessions=S.workoutSessions.slice(0,120);
+  }
+  saveS();closeOv('feedback-modal');
+  showToast('💪 Sesión guardada — ¡bien hecho!','var(--green)');
+  renderFit();
 }
 
 // ─── TIMER ────────────────────────────────────────────────
