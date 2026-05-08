@@ -1191,71 +1191,68 @@ select.fi{appearance:none}
 // CATÁLOGO COMPLETO DE RECETAS
 // ════════════════════════════════════════
 const RECIPES = {
-  breakfast:{label:'Desayuno',time:'07:30',kcal:555,protein:38,
+  breakfast:{label:'Desayuno',time:'07:00',kcal:490,protein:36,
     combos:[
-      {id:'a',name:'Avena power bowl',kcal:555,protein:35,time:8,
-        ingredients:['80g avena en copos','200ml leche desnatada','1 plátano mediano','20g nueces','3 huevos enteros','Café solo','Canela al gusto'],
-        steps:['Cocina la avena con la leche 3 min en microondas, removiendo a la mitad.','Bate los huevos con sal y revuelve en sartén antiadherente 2 min.','Trocea el plátano sobre la avena, añade nueces y canela.','Sirve los huevos al lado. Café solo o con leche desnatada.']},
-      {id:'b',name:'Tortitas proteicas',kcal:560,protein:42,time:10,
-        ingredients:['60g avena','2 huevos','30g proteína whey','1 plátano','100g yogur griego 0%','1 cdita miel','Spray de aceite'],
-        steps:['Tritura avena, huevos, whey, medio plátano y un chorro de leche.','Calienta sartén a fuego medio con spray de aceite.','Vierte porciones, dora 1-2 min por lado hasta ver burbujas.','Corona con yogur, plátano y miel.']},
-      {id:'c',name:'Tostadas mediterráneas',kcal:545,protein:38,time:7,
-        ingredients:['2 rebanadas pan integral','3 huevos','½ aguacate','1 tomate','60g jamón de pavo','Vinagre blanco','Sal, pimienta, orégano'],
-        steps:['Tuesta el pan integral. Lleva agua a hervir suave con vinagre.','Casca cada huevo en una taza y deslízalo al agua. Cocina 3 min para yema fluida.','Aplasta el aguacate sobre el pan, añade tomate y pavo.','Coloca los huevos pochados encima. Sazona.']},
-      {id:'d',name:'Bowl de yogur y granola',kcal:550,protein:36,time:5,
-        ingredients:['250g yogur griego 0%','40g avena tostada','15g nueces','15g almendras','1 cda semillas chía','100g frutos rojos','1 cdita miel'],
-        steps:['Tuesta la avena en sartén sin aceite 3 min.','Añade nueces y almendras, tuesta 1 min más.','En un bol pon el yogur con semillas chía.','Cubre con granola tostada, frutos rojos y miel.']},
-      {id:'e',name:'Burrito proteico',kcal:565,protein:40,time:10,
-        ingredients:['1 tortilla integral grande','3 huevos','60g jamón de pavo','30g queso fresco','¼ aguacate','Espinaca fresca'],
-        steps:['Bate los huevos y revuelve en sartén 2 min con sal.','Calienta la tortilla 20 segundos en microondas.','Coloca espinaca, jamón, queso y huevos en el centro.','Añade aguacate en láminas. Enrolla apretado y corta.']},
-      {id:'f',name:'Pudding de chía',kcal:540,protein:38,time:5,
-        ingredients:['40g semillas chía','350ml leche semidesnatada','30g whey vainilla','1 plátano','20g almendras','1 cdita cacao puro'],
-        steps:['Noche anterior: mezcla chía con leche y whey. Refrigera 8h.','Por la mañana remueve bien hasta textura cremosa.','Trocea el plátano, mezcla mitad con cacao.','Sirve por capas: pudding, plátano-cacao, almendras.']},
-      {id:'g',name:'Tortilla francesa rellena',kcal:555,protein:41,time:8,
-        ingredients:['4 huevos','60g jamón de pavo','40g queso fresco','1 tomate','1 rebanada pan integral','Hierbas provenzales'],
-        steps:['Tuesta el pan integral.','Bate los huevos con sal y hierbas provenzales.','Cuaja en sartén con poco aceite; añade pavo y queso antes de doblar.','Sirve con tomate en rodajas y pan tostado.']},
-      {id:'h',name:'Smoothie bowl tropical',kcal:545,protein:36,time:5,
-        ingredients:['1 plátano congelado','100g mango congelado','30g whey','200ml leche desnatada','30g granola','Fresas frescas','Coco rallado'],
-        steps:['Tritura plátano, mango, whey y leche hasta textura espesa.','Vierte en un bol bien frío.','Decora con granola, fresas, coco y mantequilla de almendra.','Tomar inmediatamente.']},
-      {id:'i',name:'Huevos benedictinos fitness',kcal:560,protein:39,time:12,
-        ingredients:['2 muffins integrales','3 huevos','80g pavo en lonchas','100g espinaca','30g queso fresco batido','Mostaza Dijon'],
-        steps:['Saltea la espinaca en sartén 2 min.','Tuesta los muffins. Pocha los huevos en agua con vinagre 3 min.','Mezcla queso fresco con mostaza para la salsa.','Monta: muffin, espinaca, pavo, huevo pochado y salsa.']}
+      {id:'a',name:'Tostadas de pavo y queso',kcal:450,protein:35,time:5,
+        ingredients:['2 rebanadas de pan integral, sourdough o pan de semillas','80g pavo en lonchas','50g queso fresco, mozzarella light o cottage cheese','1 pieza de fruta (plátano, manzana o frutos rojos)','Café, leche o bebida vegetal'],
+        steps:['Tuesta el pan.','Coloca las lonchas de pavo sobre las tostadas.','Añade el queso fresco o mozzarella por encima.','Acompaña con la fruta y el café o leche.']},
+      {id:'b',name:'Huevos con aguacate y tostada',kcal:500,protein:30,time:8,
+        ingredients:['2-3 huevos','1 rebanada de pan integral o sourdough','½ aguacate maduro','Pavo o jamón cocido (opcional, para más proteína)','Sal, pimienta, zumo de limón','Café o leche'],
+        steps:['Tuesta el pan.','Cocina los huevos a la plancha, revueltos o pochados con muy poco aceite.','Aplasta el aguacate con un tenedor, añade sal y zumo de limón.','Monta la tostada con aguacate y huevos encima.','Añade pavo o jamón si quieres más proteína.']},
+      {id:'c',name:'Avena con proteína',kcal:520,protein:42,time:5,
+        ingredients:['75g avena en copos','200ml leche o bebida vegetal','1 scoop de proteína whey','1 plátano o frutos rojos','Canela al gusto','1 cdta crema de cacahuete 100% (opcional)'],
+        steps:['Cocina la avena con la leche 3 min en microondas, removiendo a la mitad.','Añade el scoop de proteína y mezcla bien mientras esté caliente.','Trocea el plátano o añade frutos rojos por encima.','Espolvorea canela y añade la crema de cacahuete si quieres.']}
     ]},
-  midmorning:{label:'Media mañana',time:'11:00',kcal:305,protein:25,
+  midmorning:{label:'Media mañana',time:'10:30',kcal:300,protein:14,
     combos:[
-      {id:'a',name:'Yogur griego con frutos secos',kcal:300,protein:22,time:2,ingredients:['200g yogur griego 0%','30g almendras crudas','1 manzana','Canela'],steps:['Sirve el yogur en un bol.','Añade almendras partidas y manzana en rodajas.','Espolvorea canela al gusto.']},
-      {id:'b',name:'Batido proteico',kcal:310,protein:30,time:3,ingredients:['30g proteína whey','250ml leche semidesnatada','1 plátano','1 cda mantequilla cacahuete','Hielo'],steps:['Añade todo a la batidora.','Tritura 30 segundos hasta cremoso.','Sirve frío con hielo.']},
-      {id:'c',name:'Manzana con almendras',kcal:290,protein:20,time:1,ingredients:['200g queso cottage','1 manzana grande','30g almendras','Canela'],steps:['Sirve el queso cottage en un bol.','Añade manzana en dados y almendras.','Espolvorea canela.']},
-      {id:'d',name:'Requesón con fruta',kcal:295,protein:24,time:2,ingredients:['200g requesón','100g frutos rojos','1 cdita miel','Semillas chía'],steps:['Sirve el requesón.','Añade frutos rojos y una cucharadita de miel.','Espolvorea semillas chía.']},
-      {id:'e',name:'Tostada de pavo',kcal:310,protein:28,time:3,ingredients:['2 rebanadas pan integral','80g jamón de pavo','30g queso fresco','Tomate cherry'],steps:['Tuesta el pan.','Coloca jamón de pavo y queso fresco.','Acompaña con tomates cherry.']}
+      {id:'a',name:'Plátano + frutos secos',kcal:280,protein:8,time:0,
+        ingredients:['1 plátano maduro','30g frutos secos naturales (almendras, nueces, pistachos o mix)'],
+        steps:['Frutos secos preferiblemente naturales o tostados sin sal, sin miel ni azúcar.','Opción favorita: 15g almendras + 15g nueces, o 30g mix natural sin sal.','Mejor opción para días normales de trabajo.']},
+      {id:'b',name:'Sándwich de pavo y queso',kcal:380,protein:25,time:3,
+        ingredients:['2 rebanadas de pan integral','80g pavo en lonchas','40g queso bajo en grasa, mozzarella light o cottage cheese','Aguacate o tomate (opcional)'],
+        steps:['Monta el sándwich con el pavo y el queso.','Añade aguacate o tomate si lo tienes.','Esta opción es mejor los días que tengas más hambre o entrenes fuerte.']}
     ]},
-  lunch:{label:'Almuerzo',time:'14:00',kcal:505,protein:44,
+  lunch:{label:'Comida',time:'12:30',kcal:630,protein:50,
     combos:[
-      {id:'a',name:'Pollo con arroz y verduras',kcal:505,protein:46,time:25,ingredients:['170g pechuga de pollo','100g arroz integral','200g verduras mixtas (brócoli, zanahoria)','1 cda AOVE','Ajo','Hierbas'],steps:['Cuece el arroz 25 min.','Saltea las verduras con ajo 8 min.','Marca el pollo en plancha 5 min por lado.','Sirve todo junto con AOVE.']},
-      {id:'b',name:'Ternera con boniato',kcal:510,protein:44,time:30,ingredients:['160g ternera magra','200g boniato','100g espinaca','1 cda AOVE','Romero','Tomillo'],steps:['Hornea el boniato en cubos a 200°C 25 min.','Saltea la espinaca 2 min.','Marca la ternera en plancha 4 min por lado.','Sirve junto con boniato y espinaca.']},
-      {id:'c',name:'Pasta boloñesa de pavo',kcal:505,protein:42,time:20,ingredients:['80g pasta integral','120g pavo picado','1 lata tomate triturado','½ cebolla','1 zanahoria','Ajo','Orégano'],steps:['Cuece la pasta al dente.','Sofríe cebolla y zanahoria 5 min, añade ajo.','Incorpora el pavo, dora 5 min.','Añade tomate y orégano, cocina 10 min. Sirve con pasta.']},
-      {id:'d',name:'Pavo a la plancha y verduras',kcal:505,protein:44,time:30,ingredients:['180g pechuga de pavo','1 calabacín','1 pimiento rojo','1 cebolla morada','150g patata','AOVE','Romero'],steps:['Trocea verduras y patata. Mezcla con AOVE y romero.','Hornea a 200°C 25 min.','En los últimos 8 min marca el pavo a la plancha.','Sirve el pavo sobre las verduras asadas.']},
-      {id:'e',name:'Pollo al limón con calabacín',kcal:495,protein:45,time:25,ingredients:['170g pechuga pollo','2 calabacines','1 limón','1 ajo','Perejil','100g arroz integral'],steps:['Cuece el arroz 25 min.','Marca el calabacín en plancha 2 min por lado.','Cocina el pollo 5 min por lado con ajo, limón y perejil.','Sirve con arroz y calabacín.']},
-      {id:'f',name:'Berenjenas rellenas de pavo',kcal:510,protein:41,time:35,ingredients:['1 berenjena grande','120g pavo picado','½ cebolla','1 tomate','40g queso bajo grasa','Orégano'],steps:['Parte la berenjena, vacía la pulpa. Hornea las cáscaras 15 min a 200°C.','Saltea cebolla, pulpa y pavo 8 min. Añade tomate y orégano.','Rellena las berenjenas, cubre con queso. Hornea 10 min más.']},
-      {id:'g',name:'Curry de garbanzos',kcal:495,protein:38,time:20,ingredients:['100g garbanzos cocidos','150g pollo','100g espinaca','100ml leche coco light','Pasta curry','Jengibre','60g arroz basmati'],steps:['Cuece el arroz 12 min.','Pocha cebolla, añade curry y jengibre 1 min.','Incorpora pollo en dados, dora 5 min. Suma garbanzos y leche de coco 5 min.','Añade espinaca al final. Sirve con arroz.']},
-      {id:'h',name:'Pollo cremoso champiñones',kcal:500,protein:46,time:25,ingredients:['170g pechuga pollo','200g champiñones','100g espinaca','100g patata','30g queso fresco batido','Mostaza'],steps:['Cuece la patata 12 min. Marca el pollo 4 min por lado.','Saltea champiñones 6 min hasta dorar.','Añade espinaca, queso y mostaza, mezcla 2 min.','Reincorpora el pollo. Sirve con patata.']},
-      {id:'i',name:'Tortilla mexicana con ternera',kcal:505,protein:42,time:20,ingredients:['2 tortillas integrales','120g ternera magra picada','60g frijoles','¼ aguacate','40g queso fresco','Lechuga','Lima','Comino'],steps:['Calienta los frijoles con sal, comino y lima.','Saltea la ternera con comino 5 min.','Calienta las tortillas. Rellena con ternera, frijoles, queso, aguacate y lechuga.','Exprimir lima por encima.']}
+      {id:'a',name:'Tupper pollo con arroz',kcal:650,protein:55,time:30,
+        ingredients:['180-220g pechuga de pollo','80g arroz basmati (peso seco)','1 cebolla mediana','1 zanahoria o calabacín','Curry suave al gusto','2 cdas yogur griego o leche de coco light','Aceite de oliva, sal y especias'],
+        steps:['Prepara el domingo para lunes y miércoles.','Cuece el arroz según instrucciones.','Sofríe la cebolla y zanahoria 5 min en AOVE.','Añade el pollo troceado y el curry, cocina 8 min.','Incorpora el yogur griego o leche de coco, mezcla y cocina 3 min más.','Divide en 2 táperes y guarda en nevera.']},
+      {id:'b',name:'Tupper pasta boloñesa fitness',kcal:620,protein:48,time:25,
+        ingredients:['180-220g carne picada magra o pavo','100g pasta (peso seco)','Tomate triturado natural','1 cebolla','1 zanahoria rallada o calabacín picado','Orégano, ajo y pimienta','Queso rallado ligero (opcional)'],
+        steps:['Prepara el domingo para martes y jueves.','Cuece la pasta al dente.','Sofríe la cebolla y zanahoria 5 min.','Añade la carne picada y dora bien.','Incorpora tomate triturado y especias, cocina 15 min a fuego lento.','Mezcla con la pasta y divide en 2 táperes.']},
+      {id:'c',name:'Comida flexible',kcal:580,protein:42,time:10,
+        ingredients:['Opción A: Sobras de tuppers (pollo con arroz o pasta)','Opción B: Arroz + pollo/pavo + aguacate + maíz + tomate + yogur griego','Opción C: Pan integral + pollo/pavo/ternera + queso + aguacate + fruta'],
+        steps:['Opción A — Aprovecha las sobras de la semana.','Opción B — Burrito bowl: monta el arroz como base y añade todos los ingredientes, yogur griego como salsa.','Opción C — Sándwich potente con proteína, queso y aguacate.']}
     ]},
-  preworkout:{label:'Pre-entreno',time:'17:30',kcal:255,protein:22,
+  preworkout:{label:'Merienda',time:'17:00',kcal:370,protein:28,
     combos:[
-      {id:'a',name:'Plátano con mantequilla cacahuete',kcal:260,protein:20,time:1,ingredients:['1 plátano grande','2 cdas mantequilla cacahuete natural','Canela'],steps:['Pela el plátano.','Unta la mantequilla de cacahuete.','Espolvorea canela.']},
-      {id:'b',name:'Tostada con miel y queso',kcal:255,protein:22,time:3,ingredients:['2 rebanadas pan integral','50g queso fresco batido','1 cdita miel','Semillas de sésamo'],steps:['Tuesta el pan.','Unta el queso fresco.','Añade miel y semillas de sésamo.']},
-      {id:'c',name:'Arroz con jamón york',kcal:250,protein:24,time:15,ingredients:['60g arroz blanco cocido','80g jamón york','1 cda AOVE','Perejil'],steps:['Cuece el arroz.','Mezcla con jamón york y AOVE.','Espolvorea perejil.']},
-      {id:'d',name:'Batido rápido whey',kcal:245,protein:28,time:2,ingredients:['30g whey','150ml leche','½ plátano','Hielo'],steps:['Mezcla whey con la leche y el plátano.','Bate 20 segundos.','Añade hielo y sirve.']},
-      {id:'e',name:'Dátiles con almendras',kcal:265,protein:18,time:1,ingredients:['4-5 dátiles Medjool','30g almendras tostadas','Café solo'],steps:['Sirve los dátiles y las almendras.','Acompaña con café solo.','Comer 30-45 min antes del entreno.']}
+      {id:'a',name:'Batido completo',kcal:420,protein:35,time:3,
+        ingredients:['1 scoop de proteína whey','1 plátano','30g frutos secos (almendras o nueces)','200ml leche o bebida vegetal'],
+        steps:['Bate la proteína con la leche hasta que quede sin grumos.','Acompaña con el plátano y los frutos secos al lado.','Mejor opción si entrenas después del trabajo.']},
+      {id:'b',name:'Sándwich de pavo y queso',kcal:350,protein:25,time:3,
+        ingredients:['2 rebanadas de pan integral','80g pavo en lonchas','40g queso bajo en grasa','Aguacate (opcional)'],
+        steps:['Monta el sándwich con pavo y queso.','Añade aguacate si quieres más grasas saludables y saciedad.']},
+      {id:'c',name:'Yogur proteico con fruta',kcal:340,protein:25,time:2,
+        ingredients:['200g yogur griego alto en proteína','1 pieza de fruta o frutos rojos','20-30g frutos secos','Miel (opcional, si necesitas más energía)'],
+        steps:['Pon el yogur en un bol.','Trocea la fruta y añade por encima.','Agrega los frutos secos y la miel si la necesitas para el entreno.']}
     ]},
-  dinner:{label:'Cena',time:'21:00',kcal:480,protein:40,
+  dinner:{label:'Cena',time:'21:00',kcal:510,protein:43,
     combos:[
-      {id:'a',name:'Tortilla francesa + ensalada',kcal:475,protein:38,time:10,ingredients:['4 huevos','1 bol ensalada (lechuga, tomate, pepino)','30g queso fresco','1 cda AOVE','Vinagre'],steps:['Bate los huevos y cuaja en sartén con poco aceite.','Prepara la ensalada con tomate, pepino y queso.','Aliña con AOVE y vinagre.','Sirve junto.']},
-      {id:'b',name:'Pechuga plancha + verduras',kcal:480,protein:44,time:15,ingredients:['150g pechuga pollo','200g verduras (brócoli, judías)','1 patata mediana','1 cda AOVE','Limón'],steps:['Cuece las verduras al vapor 8 min.','Cuece la patata.','Marca la pechuga en plancha 5 min por lado con zumo de limón.','Aliña las verduras con AOVE.']},
-      {id:'c',name:'Crema de verduras + huevos',kcal:465,protein:38,time:20,ingredients:['400g calabacín y puerro','2 huevos duros','30g queso fresco','Caldo de verduras','Cúrcuma','AOVE'],steps:['Sofríe puerro y calabacín 8 min.','Añade caldo y cúrcuma, cocina 10 min.','Tritura hasta textura suave.','Sirve con huevos duros en rodajas y queso fresco.']},
-      {id:'d',name:'Tofu salteado con verduras',kcal:470,protein:36,time:20,ingredients:['200g tofu firme','150g brócoli','100g pimiento rojo','Salsa de soja','Jengibre','Sésamo','60g arroz integral'],steps:['Cuece el arroz.','Saltea el tofu en cubos hasta dorar, retira.','Saltea brócoli y pimiento 5 min.','Reincorpora el tofu, añade soja, jengibre y sésamo.']},
-      {id:'e',name:'Ensalada completa proteica',kcal:490,protein:42,time:10,ingredients:['150g pechuga cocida en tiras','100g garbanzos','1 bol lechuga variada','Tomate cherry','½ aguacate','30g queso fresco','AOVE y limón'],steps:['Trocea todos los ingredientes.','Dispón la lechuga como base.','Añade pollo, garbanzos, tomate, aguacate y queso.','Aliña con AOVE y zumo de limón.']}
+      {id:'a',name:'Tortilla potente',kcal:480,protein:42,time:10,
+        ingredients:['3 huevos (o 2 huevos + claras adicionales)','80g pavo, jamón cocido o pollo','Queso ligero al gusto','1 tostada integral o patata cocida/microondas','½ aguacate (opcional)'],
+        steps:['Bate los huevos con sal y pimienta.','Mezcla con el pavo o pollo troceado.','Cuaja la tortilla a fuego medio-bajo con muy poco aceite, volteando con cuidado.','Sirve con la tostada o la patata cocida. Añade aguacate si quieres.']},
+      {id:'b',name:'Bowl rápido de pollo',kcal:520,protein:45,time:8,
+        ingredients:['150g pollo cocinado o tiras de pollo','Arroz de microondas o patata cocida','½ aguacate','Tomate, maíz o verdura rápida','Yogur griego como salsa (con ajo en polvo y sal)'],
+        steps:['Calienta el pollo y el arroz/patata en microondas.','Mezcla yogur griego con ajo en polvo y sal para la salsa.','Monta el bowl con todos los ingredientes.','Vierte la salsa de yogur por encima y sirve.']},
+      {id:'c',name:'Hamburguesa saludable',kcal:560,protein:45,time:12,
+        ingredients:['1-2 hamburguesas de ternera magra, pollo o pavo','Pan integral o patata al horno/microondas','Queso (una loncha)','Aguacate o huevo frito','Ensalada sencilla (opcional)'],
+        steps:['Cocina las hamburguesas a la plancha 4-5 min por lado.','Prepara la patata al microondas si la usas (5-8 min).','Tuesta el pan ligeramente si lo usas.','Monta con queso, aguacate o huevo frito. Acompaña con ensalada.']},
+      {id:'d',name:'Pasta proteica rápida',kcal:580,protein:48,time:15,
+        ingredients:['100g pasta','120g pollo, pavo, carne picada magra o 2-3 huevos','Tomate triturado natural','Queso cottage, mozzarella light o queso rallado ligero','Orégano, ajo en polvo, pimienta'],
+        steps:['Cuece la pasta al dente (8-10 min).','Mientras, saltea la proteína con el tomate y las especias 5-8 min.','Mezcla la salsa con la pasta caliente.','Añade el queso por encima y sirve inmediatamente.']},
+      {id:'e',name:'Cena rápida de yogur',kcal:380,protein:35,time:2,
+        ingredients:['200g yogur griego alto en proteína','40g avena o granola controlada','1 pieza de fruta','1 cda crema de cacahuete 100%','1 scoop de proteína whey (si ese día falta proteína)'],
+        steps:['Pon el yogur en un bol.','Añade la avena o granola.','Trocea la fruta y coloca encima con la crema de cacahuete.','Si ese día te ha faltado proteína, mezcla el scoop de proteína con el yogur.','Opción perfecta para noches de cansancio.']}
     ]}
 };
 
@@ -1370,7 +1367,7 @@ function buildAIContext(){
   const tasksDone=tasks.filter(t=>t.done).length;
   const macros=getCurrentMacros();
   let kcal=0,prot=0;
-  MEAL_SLOTS.forEach(s=>{const m=S.today.meals[s];if(m&&m.completed){kcal+=MEAL_KCAL[s];prot+=MEAL_PROT[s];}});
+  MEAL_SLOTS.forEach(s=>{const m=S.today.meals[s];if(m&&m.completed){kcal+=getSlotKcal(s);prot+=getSlotProt(s);}});
   (S.today.extraFood||[]).forEach(e=>{kcal+=e.kcal||0;prot+=e.prot||0;});
   const dow=new Date().getDay();
   const wIdx=WORKOUT_DAYS[dow];
@@ -1418,11 +1415,11 @@ IDEAS RÁPIDAS PENDIENTES:
 ${quickNotesText||'Ninguna'}
 
 CATÁLOGO DE COMIDAS DISPONIBLES:
-- Desayuno: ${(MEAL_COMBOS.breakfast||[]).join(', ')}
-- Media mañana: ${(MEAL_COMBOS.midmorning||[]).join(', ')}
-- Almuerzo: ${(MEAL_COMBOS.lunch||[]).join(', ')}
-- Pre-entreno: ${(MEAL_COMBOS.preworkout||[]).join(', ')}
-- Cena: ${(MEAL_COMBOS.dinner||[]).join(', ')}
+- Desayuno: ${(MEAL_COMBOS.breakfast||[]).join(' | ')}
+- Media mañana: ${(MEAL_COMBOS.midmorning||[]).join(' | ')}
+- Comida: ${(MEAL_COMBOS.lunch||[]).join(' | ')}
+- Merienda: ${(MEAL_COMBOS.preworkout||[]).join(' | ')}
+- Cena: ${(MEAL_COMBOS.dinner||[]).join(' | ')}
 
 Fase entrenamiento: ${getCurrentPhase()} | Equipamiento: TRX=${S.equipment?.trx?'Sí':'No'}, MC=${S.equipment?.mc?'Sí':'No'}
 
@@ -1711,14 +1708,14 @@ function askAIReconfig(skippedSlot){
   let kcalDone=0,protDone=0;
   MEAL_SLOTS.forEach(s=>{
     const m=S.today.meals[s];
-    if(m&&m.completed){kcalDone+=MEAL_KCAL[s];protDone+=MEAL_PROT[s];}
+    if(m&&m.completed){kcalDone+=getSlotKcal(s);protDone+=getSlotProt(s);}
   });
   const kcalLeft=macros.kcal-kcalDone;
   const protLeft=macros.protein-protDone;
   const pendingSlots=MEAL_SLOTS.filter(s=>s!==skippedSlot&&!(S.today.meals[s]&&S.today.meals[s].completed));
   const skippedName=MEAL_LABELS[skippedSlot].split(' ')[0];
-  const skippedCals=MEAL_KCAL[skippedSlot];
-  const skippedProt=MEAL_PROT[skippedSlot];
+  const skippedCals=getSlotKcal(skippedSlot);
+  const skippedProt=getSlotProt(skippedSlot);
 
   const prompt=`No he podido comer el ${skippedName} de hoy (${skippedCals} kcal, ${skippedProt}g proteína que me faltarán). 
 
@@ -1825,18 +1822,23 @@ const INITIAL_PROJECTS=[
     ],expanded:false},
 ];
 const MEAL_SLOTS=['breakfast','midmorning','lunch','preworkout','dinner'];
-const MEAL_LABELS={breakfast:'Desayuno 07:30',midmorning:'Media mañana 11:00',lunch:'Almuerzo 14:00',preworkout:'Pre-entreno 17:30',dinner:'Cena 21:00'};
-const MEAL_TIMES={breakfast:'07:30',midmorning:'11:00',lunch:'14:00',preworkout:'17:30',dinner:'21:00'};
-const MEAL_KCAL={breakfast:555,midmorning:305,lunch:505,preworkout:255,dinner:480};
-const MEAL_PROT={breakfast:38,midmorning:25,lunch:44,preworkout:22,dinner:40};
+const MEAL_LABELS={breakfast:'Desayuno 07:00',midmorning:'Media mañana 10:30',lunch:'Comida 12:30',preworkout:'Merienda 17:00',dinner:'Cena 21:00'};
+const MEAL_TIMES={breakfast:'07:00',midmorning:'10:30',lunch:'12:30',preworkout:'17:00',dinner:'21:00'};
+const MEAL_KCAL={breakfast:490,midmorning:300,lunch:630,preworkout:370,dinner:510};
+const MEAL_PROT={breakfast:36,midmorning:14,lunch:50,preworkout:28,dinner:43};
 const MEAL_COLOR={breakfast:'#F5C842',midmorning:'#22C55E',lunch:'#00E5FF',preworkout:'#F97316',dinner:'#A855F7'};
 const MEAL_COMBOS={
-  breakfast:['Avena power bowl','Tortitas proteicas','Tostadas mediterráneas','Bowl yogur granola','Burrito proteico','Pudding de chía','Tortilla rellena','Smoothie bowl tropical','Huevos benedictinos fitness'],
-  midmorning:['Yogur griego con frutos secos','Batido proteico','Manzana con almendras','Requesón con fruta','Tostada de pavo'],
-  lunch:['Pollo con arroz y verduras','Ternera con boniato','Pasta boloñesa de pavo','Pavo a la plancha y verduras','Pollo al limón','Berenjenas rellenas de pavo','Curry de garbanzos','Pollo cremoso champiñones','Tortilla mexicana'],
-  preworkout:['Plátano con mantequilla cacahuete','Tostada con miel y queso','Arroz con jamón york','Batido rápido whey','Dátiles con almendras'],
-  dinner:['Tortilla francesa + ensalada','Pechuga plancha + verduras','Crema verduras + huevos','Tofu salteado (sin carne)','Ensalada completa + queso'],
+  breakfast:['Tostadas de pavo y queso','Huevos con aguacate y tostada','Avena con proteína'],
+  midmorning:['Plátano + frutos secos','Sándwich de pavo y queso'],
+  lunch:['Tupper pollo con arroz','Tupper pasta boloñesa fitness','Comida flexible'],
+  preworkout:['Batido completo','Sándwich de pavo y queso','Yogur proteico con fruta'],
+  dinner:['Tortilla potente','Bowl rápido de pollo','Hamburguesa saludable','Pasta proteica rápida','Cena rápida de yogur'],
 };
+// Kcal y proteína exactas por combo seleccionado
+const COMBO_KCAL={breakfast:[450,500,520],midmorning:[280,380],lunch:[650,620,580],preworkout:[420,350,340],dinner:[480,520,560,580,380]};
+const COMBO_PROT={breakfast:[35,30,42],midmorning:[8,25],lunch:[55,48,42],preworkout:[35,25,25],dinner:[42,45,45,48,35]};
+function getSlotKcal(slot){const idx=S.mealCombos[slot]||0;return(COMBO_KCAL[slot]||[])[idx]||MEAL_KCAL[slot];}
+function getSlotProt(slot){const idx=S.mealCombos[slot]||0;return(COMBO_PROT[slot]||[])[idx]||MEAL_PROT[slot];}
 let WORKOUT_DAYS={1:0,2:1,4:2,6:3}; // can be overridden by S.workoutSchedule
 function initWorkoutDays(){if(S.workoutSchedule&&Object.keys(S.workoutSchedule).length)WORKOUT_DAYS=Object.assign({},S.workoutSchedule);}
 function saveWorkoutSchedule(){S.workoutSchedule={...WORKOUT_DAYS};saveS();}
@@ -2167,7 +2169,7 @@ function renderDash(){
   const tasks=getTodayTasks(todayKey());
   const tasksDone=tasks.filter(t=>t.done).length,tasksTotal=tasks.length;
   let kcal=0,prot=0;
-  MEAL_SLOTS.forEach(s=>{const m=S.today.meals[s];if(m&&m.completed){kcal+=MEAL_KCAL[s];prot+=MEAL_PROT[s];}});
+  MEAL_SLOTS.forEach(s=>{const m=S.today.meals[s];if(m&&m.completed){kcal+=getSlotKcal(s);prot+=getSlotProt(s);}});
   (S.today.extraFood||[]).forEach(e=>{kcal+=e.kcal||0;prot+=e.prot||0;});
   const urgentes=S.projects.filter(p=>!p.done&&p.priority==='urgent').length;
   document.getElementById('kpi-rutina').textContent=`${tasksDone}/${tasksTotal}`;
@@ -2645,7 +2647,7 @@ function renderNutri(){
   ensureToday();
   const macros=getCurrentMacros();
   let kcal=0,prot=0;
-  MEAL_SLOTS.forEach(s=>{const m=S.today.meals[s];if(m&&m.completed){kcal+=MEAL_KCAL[s];prot+=MEAL_PROT[s];}});
+  MEAL_SLOTS.forEach(s=>{const m=S.today.meals[s];if(m&&m.completed){kcal+=getSlotKcal(s);prot+=getSlotProt(s);}});
   (S.today.extraFood||[]).forEach(e=>{kcal+=e.kcal||0;prot+=e.prot||0;});
   document.getElementById('kcal-cur').textContent=kcal;document.getElementById('kcal-tgt').textContent=macros.kcal;
   document.getElementById('prot-cur').textContent=prot;document.getElementById('prot-tgt').textContent=macros.protein;
