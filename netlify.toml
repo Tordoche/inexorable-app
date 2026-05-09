@@ -3,6 +3,10 @@
   publish = "."
   functions = "netlify/functions"
 
+# ── Scheduled function: enviar push cada minuto ──────────────
+[functions."notify"]
+  schedule = "* * * * *"
+
 # ── Redirects ────────────────────────────────────────────────
 # Compatibilidad con URL antigua
 [[redirects]]

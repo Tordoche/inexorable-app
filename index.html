@@ -792,6 +792,13 @@ select.fi{appearance:none}
         <div class="sw on" id="sw-mc" onclick="toggleEquip('mc')"></div>
       </div>
     </div>
+    <!-- Notificaciones push -->
+    <div class="sec" style="margin-top:14px"><div class="sec-title">🔔 Notificaciones</div></div>
+    <div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <p style="font-size:11px;color:var(--tx2);line-height:1.5">Recibe un aviso <strong style="color:var(--tx)">10 minutos antes</strong> de cada comida y entrenamiento, aunque el móvil esté bloqueado. Requiere tener la app añadida al inicio.</p>
+      <button class="full-btn" style="background:var(--ac);color:#000;font-weight:800" onclick="setupPush()" id="btn-push-setup">🔔 Activar notificaciones</button>
+      <p id="push-status" style="font-size:10px;color:var(--tx3);text-align:center;display:none"></p>
+    </div>
     <!-- Backup -->
     <div class="sec" style="margin-top:14px"><div class="sec-title">💾 Copia de seguridad</div></div>
     <div class="card" style="display:flex;flex-direction:column;gap:10px">
@@ -3510,6 +3517,20 @@ function renderProg(){
   document.getElementById('forced-phase').value=S.forcedPhase||'';
   document.getElementById('sw-trx').classList.toggle('on',S.equipment?.trx!==false);
   document.getElementById('sw-mc').classList.toggle('on',S.equipment?.mc!==false);
+  // Push notification status
+  const btnPush=document.getElementById('btn-push-setup');
+  const pushSt=document.getElementById('push-status');
+  if(btnPush&&pushSt){
+    if(!('Notification' in window)){btnPush.textContent='🔔 No soportado';btnPush.disabled=true;}
+    else if(Notification.permission==='granted'){
+      btnPush.textContent='✅ Notificaciones activas';
+      btnPush.style.background='var(--sf2)';btnPush.style.color='var(--tx)';
+      pushSt.style.display='block';pushSt.textContent='Avisará 10 min antes de comidas y entrenamientos';
+    } else if(Notification.permission==='denied'){
+      btnPush.textContent='🚫 Bloqueadas en Ajustes';
+      btnPush.style.background='var(--sf3)';btnPush.style.color='var(--tx2)';
+    }
+  }
 }
 function renderWeightChart(){
   const svg=document.getElementById('weight-chart');if(!svg)return;
@@ -4650,11 +4671,109 @@ function generateAppIcon(){
   }catch(e){console.warn('Icon gen:',e);}
 }
 
+// ─── WEB PUSH ─────────────────────────────────────────────
+const VAPID_PUBLIC_KEY='BPhxklok5q3LU5sQEkh2wfauNj4G-RKgucL3CWtjoPwj_yuIuEH26AyWsFVLVc82mOQjsM27jYLINi7OR0A5m0c';
+
+function urlBase64ToUint8Array(b64){
+  const pad=b64.length%4===0?'':'='.repeat(4-b64.length%4);
+  const raw=atob((b64+pad).replace(/-/g,'+').replace(/_/g,'/'));
+  return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));
+}
+
+function getPushUserId(){
+  if(!S.pushUserId){S.pushUserId='u_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);saveS();}
+  return S.pushUserId;
+}
+
 function registerSW(){
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js',{scope:'/'})
-      .catch(()=>{});// silencioso en desarrollo local
+  if(!('serviceWorker' in navigator))return;
+  navigator.serviceWorker.register('/sw.js',{scope:'/'})
+    .then(reg=>{
+      // Si ya hay permiso concedido, suscribir automáticamente
+      if(Notification.permission==='granted')subscribePush(reg);
+    })
+    .catch(()=>{});
+}
+
+async function setupPush(){
+  if(!('Notification' in window)||!('serviceWorker' in navigator)||!('PushManager' in window)){
+    showToast('Tu navegador no soporta notificaciones push','var(--orange)');return;
   }
+  if(Notification.permission==='granted'){
+    await subscribePush();schedulePushNotifications();
+    showToast('✅ Notificaciones ya activadas','var(--green)');return;
+  }
+  if(Notification.permission==='denied'){
+    showToast('Notificaciones bloqueadas — actívalas en Ajustes del iPhone','var(--red)');return;
+  }
+  const perm=await Notification.requestPermission();
+  if(perm==='granted'){
+    await subscribePush();schedulePushNotifications();
+    showToast('🔔 Notificaciones activadas','var(--green)');
+  } else {
+    showToast('Notificaciones denegadas','var(--orange)');
+  }
+}
+
+async function subscribePush(reg){
+  try{
+    if(!reg){
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      reg=registrations[0];
+    }
+    if(!reg)return;
+    await reg.update();
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub){
+      sub=await reg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    // Enviar subscription al servidor
+    await fetch('/.netlify/functions/subscribe',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subscription:sub.toJSON(),userId:getPushUserId()})
+    }).catch(()=>{});
+  }catch(e){console.warn('Push subscribe error:',e);}
+}
+
+function schedulePushNotifications(){
+  // Construir lista de notificaciones para hoy (10 min antes de cada evento)
+  const today=todayKey();
+  const notifications=[];
+  const addNotif=(id,title,body,hhmm)=>{
+    const [hh,mm]=hhmm.split(':').map(Number);
+    const dt=new Date();dt.setHours(hh,mm,0,0);
+    const sendAt=new Date(dt.getTime()-10*60*1000);
+    if(sendAt>new Date())notifications.push({id:today+'_'+id,title,body,sendAt:sendAt.toISOString()});
+  };
+
+  // Comidas pendientes
+  MEAL_SLOTS.forEach(slot=>{
+    if(S.today.meals[slot]?.completed)return;
+    const cIdx=S.mealCombos[slot]||0;
+    const name=(MEAL_COMBOS[slot]||[])[cIdx]||slot;
+    const time=MEAL_TIMES[slot];
+    if(time)addNotif('meal_'+slot,'🍽 '+name.split(' ')[0],'En 10 minutos: '+MEAL_LABELS[slot].split(' ')[0],time);
+  });
+
+  // Bloques de entreno
+  PROGRAM_WORKOUTS.forEach((w,i)=>{
+    if(w.time){
+      const dow=new Date().getDay();
+      const isToday=Object.entries(WORKOUT_DAYS).some(([d,wi])=>parseInt(d)===dow&&wi===i);
+      if(isToday)addNotif('workout_'+i,'💪 '+w.name,'En 10 minutos empieza '+w.name+(w.sub?' · '+w.sub:''),w.time);
+    }
+  });
+
+  if(!notifications.length)return;
+  fetch('/.netlify/functions/schedule',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({userId:getPushUserId(),notifications})
+  }).catch(()=>{});
 }
 
 function initApp(){
@@ -4677,6 +4796,8 @@ function initApp(){
   registerSW();
   checkStorageQuota();
   renderDash();
+  // Programar notificaciones push del día (si ya hay permiso)
+  if(Notification.permission==='granted')setTimeout(schedulePushNotifications,2000);
 
   // ── Day-change detection ──
   function onNewDay(){
