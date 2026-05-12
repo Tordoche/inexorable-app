@@ -1,7 +1,7 @@
 // Service Worker — Inexorable PWA
 // Estrategia: Network-first con fallback a caché para el shell de la app
 
-const CACHE_NAME = 'inexorable-v4';
+const CACHE_NAME = 'inexorable-v5';
 const SHELL = ['/', '/index.html', '/manifest.json', '/apple-touch-icon.png'];
 
 // ── Instalación: pre-cachear el shell ─────────────────────
@@ -9,17 +9,22 @@ self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL))
   );
-  self.skipWaiting();
+  // NO llamamos skipWaiting() aquí — esperamos a que la página lo pida
+  // para evitar romper sesiones en curso. La página lo pide desde el banner.
 });
 
-// ── Activación: limpiar cachés antiguas ───────────────────
+// ── Activación: limpiar cachés antiguas y tomar control ───
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
+});
+
+// ── Mensaje desde la página: activar inmediatamente ───────
+self.addEventListener('message', event => {
+  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // ── Push: mostrar notificación aunque el móvil esté bloqueado ──
@@ -55,14 +60,13 @@ self.addEventListener('notificationclick', event => {
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Las llamadas a la API de Claude siempre van a la red (no se cachean)
+  // Las llamadas a la API siempre van a la red (no se cachean)
   if (url.pathname.startsWith('/.netlify/functions/')) return;
 
   // Para el resto: intentar red, si falla usar caché
   event.respondWith(
     fetch(event.request)
       .then(res => {
-        // Sólo cachear respuestas válidas de nuestro origen
         if (res.ok && url.origin === self.location.origin) {
           const clone = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
