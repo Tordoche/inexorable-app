@@ -759,6 +759,9 @@ select.fi{appearance:none}
   </div>
   <div id="nf-fit" style="display:none"><div id="fit-content"></div></div>
   <div id="nf-prog" style="display:none">
+    <!-- Calendario de actividad -->
+    <div class="sec"><div class="sec-title">📅 Calendario de actividad</div></div>
+    <div class="card" style="padding:14px" id="activity-calendar"></div>
     <!-- Sesiones de entreno -->
     <div class="sec"><div class="sec-title">💪 Sesiones registradas</div><button onclick="switchProgView('sessions')" style="background:none;border:none;color:var(--ac);font-size:11px;font-weight:700;cursor:pointer" id="prog-sessions-link">Ver todas →</button></div>
     <div id="prog-session-history"></div>
@@ -2229,6 +2232,7 @@ let timerInt=null,timerSec=0;
 let motivLock=false;
 let nfTab='fit';
 let fitWIdx=null; // null = auto (hoy, o próximo si es descanso)
+let fitSelectedDate=null; // null = today; 'YYYY-MM-DD' = past date view
 let feedbackState={rpe:null,energy:null,sleep:null};
 
 function defaultS(){
@@ -2245,7 +2249,7 @@ function defaultS(){
     finance:null,
   };
 }
-function todayKey(){return new Date().toISOString().slice(0,10);}
+function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function saveS(){const d={...S};localStorage.setItem('inexorable_v2',JSON.stringify(d));}
 function loadS(){
   const raw=localStorage.getItem('inexorable_v2')||localStorage.getItem('inexorable_v1');
@@ -2283,7 +2287,18 @@ function completeSetup(){ initApp(); } // por si acaso queda alguna referencia
 
 function ensureToday(){
   const k=todayKey();
-  if(S.today.date!==k) S.today={date:k,meals:{},exercises:{},water:0};
+  if(S.today.date!==k){
+    if(S.today.date){
+      if(!S.dayHistory)S.dayHistory={};
+      S.dayHistory[S.today.date]={
+        meals:JSON.parse(JSON.stringify(S.today.meals||{})),
+        water:S.today.water||0,
+        extraFood:JSON.parse(JSON.stringify(S.today.extraFood||[])),
+        exercises:JSON.parse(JSON.stringify(S.today.exercises||{}))
+      };
+    }
+    S.today={date:k,meals:{},exercises:{},water:0};
+  }
 }
 
 // ─── NAV ──────────────────────────────────────────────────
@@ -3123,20 +3138,26 @@ function switchFitTab(wi){fitWIdx=wi;renderFit();}
 
 function renderFit(){
   ensureToday();
-  const dow=new Date().getDay();
-  const todayWIdx=WORKOUT_DAYS[dow]; // undefined si hoy es descanso
-  const dias=['Do','Lu','Ma','Mi','Ju','Sá','Vi']; // js: 0=Dom,1=Lun,...
+  const viewDate=fitSelectedDate||todayKey();
+  const isViewingToday=viewDate===todayKey();
+  const viewDateObj=new Date(viewDate+'T12:00:00');
+  const dow=isViewingToday?new Date().getDay():viewDateObj.getDay();
+  const todayWIdx=WORKOUT_DAYS[new Date().getDay()]; // hoy real
+  const viewWIdx=WORKOUT_DAYS[dow];
+  const dias=['Do','Lu','Ma','Mi','Ju','Sá','Vi'];
   const diasLabel=['Do','Lu','Ma','Mi','Ju','Vi','Sá'];
 
-  // Auto-selección: hoy si hay entreno; si no, el próximo
+  // Auto-selección: el bloque del día visualizado, o próximo si descanso
   if(fitWIdx===null){
-    if(todayWIdx!==undefined){
-      fitWIdx=todayWIdx;
-    } else {
+    if(viewWIdx!==undefined){
+      fitWIdx=viewWIdx;
+    } else if(isViewingToday){
       for(let off=1;off<=7;off++){
-        const d=(dow+off)%7;
+        const d=(new Date().getDay()+off)%7;
         if(WORKOUT_DAYS[d]!==undefined){fitWIdx=WORKOUT_DAYS[d];break;}
       }
+    } else {
+      fitWIdx=0;
     }
   }
   const wIdx=fitWIdx??0;
@@ -3152,13 +3173,32 @@ function renderFit(){
   const hidden=(S.hiddenExercises||{})[wIdx]||[];
   const customEx=(S.customExercises||{})[wIdx]||[];
   const allExercises=[...w.exercises,...customEx].filter(ex=>!hidden.includes(ex.name));
-  const exDone=allExercises.filter((_,i)=>S.today.exercises[wIdx+'_'+i]).length;
+  const exDone=allExercises.filter((_,i)=>isViewingToday?(!!S.today.exercises[wIdx+'_'+i]):(!!((S.dayHistory||{})[viewDate]?.exercises?.[wIdx+'_'+i]))).length;
   const allDone=exDone===allExercises.length;
-  const isToday=todayWIdx===wIdx;
-  const isRestDay=todayWIdx===undefined;
+  const isToday=isViewingToday&&todayWIdx===wIdx;
+  const isRestDay=isViewingToday&&todayWIdx===undefined;
 
   const c=document.getElementById('fit-content');
+  // Build last-7-days pills for date selector
+  const datePills=(()=>{
+    const pills=[];
+    for(let i=6;i>=0;i--){
+      const d=new Date();d.setDate(d.getDate()-i);
+      const dk=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      const isToday2=i===0;
+      const isSel=dk===viewDate;
+      const label=isToday2?'Hoy':['Do','Lu','Ma','Mi','Ju','Vi','Sá'][d.getDay()]+' '+d.getDate();
+      pills.push(`<button onclick="fitSelectedDate='${dk}';fitWIdx=null;renderFit()" style="flex-shrink:0;padding:5px 11px;border-radius:99px;border:1.5px solid ${isSel?'var(--ac)':'var(--bd)'};background:${isSel?'rgba(0,229,255,.13)':'var(--sf2)'};color:${isSel?'var(--ac)':'var(--tx2)'};font-size:10px;font-weight:${isSel?'800':'600'};cursor:pointer;white-space:nowrap">${label}</button>`);
+    }
+    return pills.join('');
+  })();
+
   c.innerHTML=`
+  <!-- ── Selector de fecha ── -->
+  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px;scrollbar-width:none">
+    ${datePills}
+  </div>
+  ${!isViewingToday?`<div style="background:rgba(0,229,255,.07);border:1px solid rgba(0,229,255,.2);border-radius:var(--rs);padding:7px 12px;margin-bottom:10px;font-size:11px;color:var(--ac);font-weight:700">📅 Editando: ${viewDateObj.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})} — los cambios se guardan en el historial</div>`:''}
 
   <!-- ── Tabs de rutinas ── -->
   <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none">
@@ -3204,8 +3244,9 @@ function renderFit(){
 
   <!-- ── Lista de ejercicios ── -->
   ${allExercises.map((ex,i)=>{
-    const done=isToday&&!!S.today.exercises[wIdx+'_'+i];
-    const logKey='exlog_'+todayKey()+'_'+wIdx+'_'+i;
+    const exKey=wIdx+'_'+i;
+    const done=isViewingToday?(!!S.today.exercises[exKey]):(!!((S.dayHistory||{})[viewDate]?.exercises?.[exKey]));
+    const logKey='exlog_'+viewDate+'_'+wIdx+'_'+i;
     const log=(S.exerciseLogs||{})[logKey]||{sets:'',reps:'',kg:'',rir:''};
     const exSafe=ex.name.replace(/'/g,'&#39;');
     const lastLog=getLastLog(ex.name,wIdx);
@@ -3272,7 +3313,7 @@ function renderFit(){
           </div>
         </div>
 
-        ${isToday?`<div class="ex-chk${done?' chk':''}" onclick="toggleExercise(${wIdx},${i})" style="flex-shrink:0">${done?'✓':''}</div>`:''}
+        <div class="ex-chk${done?' chk':''}" onclick="toggleExercise(${wIdx},${i})" style="flex-shrink:0">${done?'✓':''}</div>
       </div>
     </div>`;
   }).join('')}
@@ -3401,6 +3442,12 @@ function renderExHistory(wIdx){
 }
 function toggleExercise(wIdx,exIdx){
   ensureToday();const key=wIdx+'_'+exIdx;
+  if(fitSelectedDate&&fitSelectedDate!==todayKey()){
+    if(!S.dayHistory)S.dayHistory={};
+    if(!S.dayHistory[fitSelectedDate])S.dayHistory[fitSelectedDate]={meals:{},water:0,extraFood:[],exercises:{}};
+    S.dayHistory[fitSelectedDate].exercises[key]=!S.dayHistory[fitSelectedDate].exercises[key];
+    saveS();renderFit();return;
+  }
   S.today.exercises[key]=!S.today.exercises[key];saveS();
   if(S.today.exercises[key]){
     gainXP(25,document.body);
@@ -3488,6 +3535,78 @@ function renderSessionHistory(){
   }
 }
 
+// ─── ACTIVITY CALENDAR ────────────────────────────────────
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
+function renderCalendar(){
+  const el=document.getElementById('activity-calendar');if(!el)return;
+  const now=new Date();
+  const firstDay=new Date(calYear,calMonth,1);
+  const daysInMonth=new Date(calYear,calMonth+1,0).getDate();
+  const startDow=(firstDay.getDay()+6)%7; // Monday=0
+  const monthNames=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  // Build set of dates with workouts and meals
+  const workoutDates=new Set();
+  const mealDates=new Set();
+  // From workoutSessions
+  (S.workoutSessions||[]).forEach(ws=>{if(ws.date)workoutDates.add(ws.date);});
+  // From exerciseLogs (scan keys)
+  Object.keys(S.exerciseLogs||{}).forEach(k=>{
+    const m=k.match(/^exlog_(\d{4}-\d{2}-\d{2})_/);
+    if(m)workoutDates.add(m[1]);
+  });
+  // From dayHistory meals
+  Object.entries(S.dayHistory||{}).forEach(([date,dh])=>{
+    const mealsDone=Object.values(dh.meals||{}).filter(m=>m&&m.completed).length;
+    if(mealsDone>0)mealDates.add(date);
+  });
+  // Today's meals
+  const todayMealsDone=Object.values(S.today.meals||{}).filter(m=>m&&m.completed).length;
+  if(todayMealsDone>0)mealDates.add(todayKey());
+
+  const cells=[];
+  // Day headers
+  ['L','M','X','J','V','S','D'].forEach(d=>{
+    cells.push(`<div style="text-align:center;font-size:9px;font-weight:700;color:var(--tx3);padding:2px 0">${d}</div>`);
+  });
+  // Empty cells before start
+  for(let i=0;i<startDow;i++)cells.push('<div></div>');
+  // Days
+  for(let day=1;day<=daysInMonth;day++){
+    const date=calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+    const isToday=date===todayKey();
+    const isFuture=new Date(date+'T12:00:00')>now;
+    const hasWorkout=workoutDates.has(date);
+    const hasMeals=mealDates.has(date);
+    const dots=[];
+    if(hasWorkout)dots.push(`<div style="width:5px;height:5px;border-radius:50%;background:var(--ac)"></div>`);
+    if(hasMeals)dots.push(`<div style="width:5px;height:5px;border-radius:50%;background:var(--green)"></div>`);
+    cells.push(`<div onclick="calDayClick('${date}')" style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 2px;border-radius:8px;cursor:${isFuture?'default':'pointer'};background:${isToday?'rgba(0,229,255,.15)':'transparent'};border:${isToday?'1.5px solid var(--ac)':'1.5px solid transparent'}">
+      <span style="font-size:11px;font-weight:${isToday?'800':'500'};color:${isFuture?'var(--tx3)':isToday?'var(--ac)':'var(--tx)'}">${day}</span>
+      <div style="display:flex;gap:2px;height:6px;align-items:center">${dots.join('')}</div>
+    </div>`);
+  }
+
+  el.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <button onclick="calMonth--;if(calMonth<0){calMonth=11;calYear--;}renderCalendar()" style="background:var(--sf2);border:1px solid var(--bd);border-radius:99px;padding:4px 10px;font-size:12px;cursor:pointer">‹</button>
+      <span style="font-size:13px;font-weight:700">${monthNames[calMonth]} ${calYear}</span>
+      <button onclick="calMonth++;if(calMonth>11){calMonth=0;calYear++;}renderCalendar()" style="background:var(--sf2);border:1px solid var(--bd);border-radius:99px;padding:4px 10px;font-size:12px;cursor:pointer">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px">${cells.join('')}</div>
+    <div style="display:flex;gap:12px;margin-top:10px;justify-content:center">
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:7px;height:7px;border-radius:50%;background:var(--ac)"></div><span style="font-size:10px;color:var(--tx2)">Entreno</span></div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:7px;height:7px;border-radius:50%;background:var(--green)"></div><span style="font-size:10px;color:var(--tx2)">Comidas</span></div>
+    </div>`;
+}
+function calDayClick(date){
+  if(date>todayKey())return;
+  // Go to that day in Entreno
+  fitSelectedDate=date;fitWIdx=null;
+  showPage('nutfit');switchNFTab('fit');
+  showToast('📅 Viendo: '+new Date(date+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}),'var(--ac)');
+}
+
 function renderProg(){
   const d=daysSince(),week=Math.ceil(d/7);
   const phase=getCurrentPhase();
@@ -3512,6 +3631,7 @@ function renderProg(){
       <span style="color:var(--orange)">■ F2 Intensificación</span>
       <span style="color:var(--ac)">■ F3 Definición</span>
     </div>`;
+  renderCalendar();
   renderSessionHistory();
   renderWeightChart();
   document.getElementById('forced-phase').value=S.forcedPhase||'';
