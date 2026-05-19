@@ -2297,7 +2297,7 @@ function ensureToday(){
         exercises:JSON.parse(JSON.stringify(S.today.exercises||{}))
       };
     }
-    S.today={date:k,meals:{},exercises:{},water:0};
+    S.today={date:k,meals:{},exercises:{},water:0,extraFood:[]};
   }
 }
 
@@ -3601,10 +3601,12 @@ function renderCalendar(){
 }
 function calDayClick(date){
   if(date>todayKey())return;
-  // Go to that day in Entreno
-  fitSelectedDate=date;fitWIdx=null;
+  fitSelectedDate=date===todayKey()?null:date;
+  fitWIdx=null;
   showPage('nutfit');switchNFTab('fit');
-  showToast('📅 Viendo: '+new Date(date+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'}),'var(--ac)');
+  setTimeout(()=>{const fc=document.getElementById('fit-content');if(fc)fc.scrollIntoView({behavior:'smooth',block:'start'});},300);
+  const label=date===todayKey()?'Hoy':new Date(date+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});
+  showToast('📅 '+label,'var(--ac)');
 }
 
 function renderProg(){
@@ -4271,10 +4273,13 @@ function saveStock(){
   const ticker=document.getElementById('stk-ticker').value.trim().toUpperCase();
   if(!ticker){showToast('⚠ Escribe un ticker');return;}
   const f=getFinance();const editId=document.getElementById('stk-edit-id').value;
+  // Auto-detectar EUR para bolsas europeas
+  const isEU=ticker.endsWith('.MC')||ticker.endsWith('.BCN')||ticker.endsWith('.MAD')||ticker.endsWith('.PA')||ticker.endsWith('.DE')||ticker.endsWith('.MI')||ticker.endsWith('.AS')||ticker.endsWith('.L');
+  const currency=isEU?'EUR':document.getElementById('stk-currency').value;
   const data={ticker,name:document.getElementById('stk-name').value.trim(),
     shares:parseFloat(document.getElementById('stk-shares').value)||0,
     costPrice:parseFloat(document.getElementById('stk-cost').value)||0,
-    currency:document.getElementById('stk-currency').value,
+    currency,
     market:document.getElementById('stk-market').value,
     currentPrice:null,lastChange:0,lastUpdated:null};
   if(editId){const s=f.stocks.find(x=>x.id===editId);if(s)Object.assign(s,data);}
@@ -4950,9 +4955,9 @@ function initApp(){
 
   // ── Day-change detection ──
   function onNewDay(){
+    fitSelectedDate=null;fitWIdx=null; // reset al día de hoy
     ensureToday();saveS();
     renderDash();renderToday();
-    // If fitness tab visible, reset exercise checkmarks display
     if(document.getElementById('page-nutfit')?.classList.contains('active'))renderFit();
     showToast('🌅 ¡Nuevo día! Tareas reiniciadas','var(--ac)');
   }
